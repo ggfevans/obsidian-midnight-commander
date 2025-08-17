@@ -12,7 +12,13 @@
 		"format": "prettier --write *.ts *.js *.json *.md",
 		"format:check": "prettier --check *.ts *.js *.json *.md"
 	},
-	"keywords": ["obsidian", "plugin", "file-manager", "dual-pane", "midnight-commander"],
+	"keywords": [
+		"obsidian",
+		"plugin",
+		"file-manager",
+		"dual-pane",
+		"midnight-commander"
+	],
 	"author": "ggfevans",
 	"license": "MIT",
 	"devDependencies": {
