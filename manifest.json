@@ -1,11 +1,11 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
-	"version": "1.0.0",
-	"minAppVersion": "0.15.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"id": "obsidian-midnight-commander",
+	"name": "Midnight Commander",
+	"version": "0.1.0",
+	"minAppVersion": "1.0.0",
+	"description": "Dual-pane file manager for Obsidian inspired by Midnight Commander",
+	"author": "ggfevans",
+	"authorUrl": "https://github.com/ggfevans",
+	"fundingUrl": "https://github.com/sponsors/ggfevans",
 	"isDesktopOnly": false
 }
