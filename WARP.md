@@ -9,6 +9,47 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 ### 🎯 Mission Statement
 Create the **first true orthodox file manager for Obsidian**, bringing efficient keyboard-only file management, bulk file operations, and side-by-side folder comparison to power users managing large vaults.
 
+## 📚 Primary Research Hub: gVault
+
+**IMPORTANT**: The primary source of truth for this project's research, progress tracking, and comprehensive documentation is located in **gVault** at:
+
+```
+gVault/
+└── 01-PROJECTS/
+    └── obsidian-midnight-commander/
+        ├── obsidian-midnight-commander.md          # Main project file
+        ├── obsidian-midnight-commander-summary.md  # Dashboard summary
+        ├── CLAUDE-PROJECT-INSTRUCTIONS.md          # AI assistant guidelines
+        └── [extensive research notes and findings]  # Rich documentation
+```
+
+### 🎯 Why gVault is Central
+- **Extensive Research**: Contains detailed plugin analysis, API research, and market gap studies
+- **Real-time Progress**: All milestones, tasks, and development decisions are tracked there
+- **Cross-referencing**: Links to related Obsidian plugins, community discussions, and technical resources
+- **Living Documentation**: Notes evolve with the project and contain contextual decision-making history
+- **AI Collaboration**: Claude project instructions and conversation context are maintained there
+
+### 📋 Workflow Integration
+When working on this project:
+
+**✅ Always Do:**
+- Check gVault project files before starting any development work
+- Document research findings, design decisions, and progress in gVault first
+- Update the main project file (`obsidian-midnight-commander.md`) when completing milestones
+- Reference specific gVault notes in issues, PRs, and development discussions
+
+**⚠️ This WARP.md File:**
+- Provides technical development guidance and coding patterns
+- Serves as a quick reference for the development environment
+- Should be kept in sync with major architectural decisions documented in gVault
+
+### 🔗 Quick gVault Navigation
+- **Main Project**: `01-PROJECTS/obsidian-midnight-commander/obsidian-midnight-commander.md`
+- **Project Summary**: `01-PROJECTS/obsidian-midnight-commander/obsidian-midnight-commander-summary.md`
+- **Plugin Ideas**: `03-RESOURCES/01-TECH/00-SOFTWARE/00-ORGANIZATION/Obsidian/Plugin-Ideas/Dual-Pane-File-Explorer.md`
+- **Research Hub**: `03-RESOURCES/01-TECH/00-SOFTWARE/00-ORGANIZATION/Obsidian/Plugin-Ideas/README.md`
+
 ### Core Features (MVP)
 - **Dual-pane layout** with independent navigation (87% of user requests)
 - **Keyboard-first** interaction (Tab to switch panes, Arrow keys, F-keys)
@@ -489,35 +530,22 @@ Top requested features from community analysis:
 
 ## Claude Project Integration
 
-### 🔗 Related Project Files
-This plugin is part of a larger project management system in gVault:
-- **Main Project**: `01-PROJECTS/obsidian-midnight-commander/obsidian-midnight-commander.md`
-- **Research Findings**: `01-PROJECTS/obsidian-midnight-commander/obsidian-midnight-commander-research-findings.md`
-- **Project Summary**: `01-PROJECTS/obsidian-midnight-commander/obsidian-midnight-commander-summary.md`
-- **Claude Instructions**: `01-PROJECTS/obsidian-midnight-commander/CLAUDE-PROJECT-INSTRUCTIONS.md`
+**Note**: For complete information about project research and documentation, see the **[Primary Research Hub: gVault](#-primary-research-hub-gvault)** section above.
 
 ### 🤖 AI Development Assistant Guidelines
 
-When working with AI assistants (Claude, GPT, etc.) on this project:
+When working with AI assistants (Claude, GPT, etc.) on this project, **always start by consulting the gVault project files** detailed in the Primary Research Hub section.
 
-#### Always:
-- ✅ Reference the main project file for current status and tasks
-- ✅ Update project files when making progress
-- ✅ Maintain consistency with established design decisions
-- ✅ Document all research findings in the project files
-- ✅ Update the summary file when status changes
-
-#### Focus Areas:
-1. **Technical Research**: Obsidian API capabilities and limitations
-2. **UI/UX Design**: Keyboard navigation patterns, dual-pane layouts
-3. **Implementation Planning**: Phase breakdown, MVP features
-4. **Community Engagement**: Gathering feedback, beta testing
+#### Development Context:
+- **Primary Source**: gVault contains the complete project context, research findings, and decision history
+- **This WARP.md**: Provides technical development patterns and coding guidelines
+- **Workflow**: gVault → Development → Update gVault with progress
 
 #### Quick Commands for AI Context:
-- "Show me the project" → Reference main project file
-- "What's the status?" → Check summary file
-- "Update progress" → Edit main project file
-- "Show tasks" → Display current milestone checklist
+- "Show me the project" → Reference gVault main project file
+- "What's the status?" → Check gVault summary file  
+- "Update progress" → Edit gVault project files first, then sync to repo
+- "Show tasks" → Display current milestone checklist from gVault
 
 ## Plugin Research Context
 
@@ -558,14 +586,19 @@ When working with AI assistants (Claude, GPT, etc.) on this project:
 
 ### Pull Request Checklist
 
+**Code Quality:**
 - [ ] Code formatted (`npm run format`)
 - [ ] Linting passes (`npm run lint`)
 - [ ] Tests pass (`npm run test`)
 - [ ] TypeScript compiles (`npm run build`)
 - [ ] Manual testing in Obsidian
-- [ ] Update WARP.md if changing architecture
 - [ ] Add/update unit tests for new features
-- [ ] Update project files in gVault if milestone completed
+
+**Documentation & Research Updates:**
+- [ ] Update WARP.md if changing architecture
+- [ ] **Update gVault project files** with progress, findings, and decisions
+- [ ] Reference relevant gVault notes in PR description
+- [ ] Update main project file if milestone completed
 
 ### Branch Naming
 
