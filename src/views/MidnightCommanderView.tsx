@@ -332,8 +332,77 @@ export class MidnightCommanderView extends ItemView {
 	}
 
 	private handleFileContextMenu(file: TAbstractFile, paneId: 'left' | 'right', position: any) {
-		// Context menu will be implemented in a later phase
-		console.log('Context menu requested for:', file.name, 'in pane:', paneId);
+		// Use the new FolderMenu to create a context menu
+		const activePane = this.getActivePane();
+		const contextMenu = new FolderMenu({
+			app: this.app,
+			folder: activePane.currentFolder,
+			showHiddenFiles: this.settings.showHiddenFiles,
+			onFileSelect: (selectedFile) => {
+				if (selectedFile instanceof TFile) {
+					// Open the file
+					this.app.workspace.getLeaf().openFile(selectedFile);
+				}
+			},
+			onFolderNavigate: (folder) => {
+				// Navigate to the folder in active pane
+				this.navigateToFolder(activePane, folder);
+			},
+			enableAutoPreview: false // Disable previews for context menu
+		});
+
+		// Customize menu for the specific file
+		contextMenu.addItem({
+			title: `--- ${file.name} ---`,
+			disabled: true
+		});
+
+		if (file instanceof TFile) {
+			contextMenu.addItem({
+				title: 'Open in new tab',
+				icon: 'external-link',
+				callback: () => {
+					this.app.workspace.getLeaf(true).openFile(file);
+				}
+			});
+		} else if (file instanceof TFolder) {
+			contextMenu.addItem({
+				title: 'Open folder',
+				icon: 'folder-open',
+				callback: () => {
+					this.navigateToFolder(activePane, file);
+				}
+			});
+		}
+
+		contextMenu.addItem({
+			title: 'Rename...',
+			icon: 'pencil',
+			callback: () => {
+				// TODO: Implement rename dialog
+				console.log('Rename:', file.name);
+			}
+		});
+
+		contextMenu.addItem({
+			title: 'Delete',
+			icon: 'trash',
+			callback: async () => {
+				await this.fileOperations.deleteFiles([file]);
+				this.refreshPane(activePane);
+			}
+		});
+
+		contextMenu.addItem({
+			title: 'Copy path',
+			icon: 'copy',
+			callback: () => {
+				navigator.clipboard.writeText(file.path);
+			}
+		});
+
+		// Show context menu at mouse position
+		contextMenu.showAtPosition(position);
 	}
 
 	private handleNavigateToFolder(folder: TFolder, paneId: 'left' | 'right') {
@@ -498,8 +567,19 @@ export class MidnightCommanderView extends ItemView {
 		const currentFile = activePane.files[activePane.selectedIndex];
 		
 		if (currentFile) {
-			// TODO: Implement context menu
-			console.log('Show context menu for:', currentFile.name);
+			// Calculate position from the selected element
+			const paneElement = this.contentEl.querySelector(
+				activePane.id === 'left' ? '.file-pane:first-child' : '.file-pane:last-child'
+			) as HTMLElement;
+			
+			if (paneElement) {
+				const rect = paneElement.getBoundingClientRect();
+				const position = {
+					x: rect.left + rect.width / 2,
+					y: rect.top + activePane.selectedIndex * 36 // Approximate position
+				};
+				this.handleFileContextMenu(currentFile, activePane.id, position);
+			}
 		}
 	}
 	

@@ -505,4 +505,13 @@ export class FolderMenu extends PopupMenu {
         
         return super.hide();
     }
+
+    /**
+     * Add custom item to menu (for context menu customization)
+     */
+    addItem(item: PopupMenuItem) {
+        this.items.push(item);
+        this.filteredItems = [...this.items];
+        this.render();
+    }
 }
