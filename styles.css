@@ -549,10 +549,55 @@
 
 /* Active pane breadcrumb styling */
 .file-pane.active .breadcrumb-segment {
-  color: var(--nav-folder-title-color, var(--text-normal));
+	color: var(--nav-folder-title-color, var(--text-normal));
 }
 
 .file-pane.active .breadcrumb-segment.current {
-  color: var(--nav-folder-title-color, var(--text-normal));
-  font-weight: var(--nav-folder-title-weight-active, 600);
+	color: var(--nav-folder-title-color, var(--text-normal));
+	font-weight: var(--nav-folder-title-weight-active, 600);
+}
+
+/* Centered breadcrumbs */
+.breadcrumb.centered {
+	justify-content: center;
+}
+
+/* High DPI optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+	.breadcrumb-separator svg {
+		shape-rendering: geometricPrecision;
+	}
+	
+	.file-item-icon svg {
+		shape-rendering: geometricPrecision;
+	}
+}
+
+/* Focus traps for better accessibility */
+.popup-menu:focus-within {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+/* Non-ASCII search improvements */
+.popup-menu .search-highlight {
+	unicode-bidi: plaintext;
+	text-orientation: mixed;
+}
+
+/* Polish: smooth transitions */
+.file-item,
+.breadcrumb-segment,
+.popup-menu-item {
+	transition: background-color 0.15s ease, 
+				color 0.15s ease,
+				transform 0.1s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.file-item,
+	.breadcrumb-segment,
+	.popup-menu-item {
+		transition: none;
+	}
 }

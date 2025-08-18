@@ -11,6 +11,11 @@ export interface MidnightCommanderSettings {
 	// UI settings
 	showFileIcons: boolean;
 	activePane: 'left' | 'right';
+	// New settings for polish phase
+	showBreadcrumbs: boolean;
+	previewDelay: number;
+	keymapProfile: 'default' | 'vim';
+	centerBreadcrumbs: boolean;
 }
 
 export interface PaneState {

@@ -10,6 +10,7 @@ import {
 import { MidnightCommanderView, VIEW_TYPE_MIDNIGHT_COMMANDER } from './src/views/MidnightCommanderView';
 import { MidnightCommanderSettings } from './src/types/interfaces';
 import { NavigationService } from './src/services/NavigationService';
+import { MidnightCommanderSettingTab } from './src/settings/SettingsTab';
 
 const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	showHiddenFiles: false,
@@ -17,6 +18,10 @@ const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	vimBindings: false,
 	showFileIcons: true,
 	activePane: 'left',
+	showBreadcrumbs: true,
+	previewDelay: 300,
+	keymapProfile: 'default',
+	centerBreadcrumbs: false,
 };
 
 export default class MidnightCommanderPlugin extends Plugin {
@@ -30,6 +35,9 @@ export default class MidnightCommanderPlugin extends Plugin {
 
 		// Initialize services
 		this.navigationService = new NavigationService(this.app);
+
+		// Add settings tab
+		this.addSettingTab(new MidnightCommanderSettingTab(this.app, this));
 
 		// Register the custom view
 		this.registerView(
