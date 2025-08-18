@@ -22,6 +22,15 @@ export class MidnightCommanderView extends ItemView {
 	fileOperations: FileOperations;
 	navigationService: NavigationService;
 	eventManager: EventManager;
+	
+	// State persistence
+	private viewState: {
+		leftPath: string;
+		rightPath: string;
+		activePane: 'left' | 'right';
+		leftSelectedIndex: number;
+		rightSelectedIndex: number;
+	};
 
 	constructor(leaf: WorkspaceLeaf, plugin: MidnightCommanderPlugin) {
 		super(leaf);
@@ -54,6 +63,15 @@ export class MidnightCommanderView extends ItemView {
 		// Initialize file operations with cache support
 		this.fileOperations = new FileOperations(this.app, plugin.fileCache);
 		this.navigationService = new NavigationService(this.app);
+		
+		// Initialize default view state
+		this.viewState = {
+			leftPath: rootFolder.path,
+			rightPath: rootFolder.path,
+			activePane: this.settings.activePane,
+			leftSelectedIndex: 0,
+			rightSelectedIndex: 0,
+		};
 	}
 
 	getViewType(): string {
@@ -70,6 +88,10 @@ export class MidnightCommanderView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		this.destroy();
+		
+		// Restore view state if available
+		this.restoreViewState();
+		
 		this.renderDualPane();
 		
 		// Register view-specific events for file/workspace changes
@@ -468,6 +490,29 @@ export class MidnightCommanderView extends ItemView {
 
 			menu.addSeparator();
 
+			// Add "Open in other pane" for folders
+			menu.addItem((item) => {
+				item.setTitle('Open in other pane')
+					.setIcon('arrow-right-left')
+					.onClick(() => {
+						// Navigate the inactive pane to this folder
+						const inactivePane = this.getInactivePane();
+						this.navigateToFolder(inactivePane, file);
+					});
+			});
+
+			// Add "Reveal in file explorer" for folders
+			menu.addItem((item) => {
+				item.setTitle('Reveal in file explorer')
+					.setIcon('external-link')
+					.onClick(() => {
+						// Show folder in system file explorer
+						this.app.showInFolder(file.path);
+					});
+			});
+
+			menu.addSeparator();
+
 			// Add "Make a copy" for folders
 			menu.addItem((item) => {
 				item.setTitle('Make a copy')
@@ -494,6 +539,65 @@ export class MidnightCommanderView extends ItemView {
 
 			menu.addSeparator();
 		} else {
+			// For files, add "Open to side" and related options
+			if (file instanceof TFile) {
+				menu.addItem((item) => {
+					item.setTitle('Open to side')
+						.setIcon('split-square-horizontal')
+						.onClick(() => {
+							// Open file in new pane to the side
+							const newLeaf = this.app.workspace.getLeaf('split', 'horizontal');
+							newLeaf.openFile(file);
+						});
+				});
+
+				menu.addItem((item) => {
+					item.setTitle('Open in new tab')
+						.setIcon('plus-square')
+						.onClick(() => {
+							// Open file in new tab
+							const newLeaf = this.app.workspace.getLeaf('tab');
+							newLeaf.openFile(file);
+						});
+				});
+
+				menu.addSeparator();
+			}
+
+			// Add "Open in other pane" for files
+			if (file instanceof TFile) {
+				menu.addItem((item) => {
+					item.setTitle('Open in other pane')
+						.setIcon('arrow-right-left')
+						.onClick(() => {
+							// Navigate the inactive pane to this file's folder and select it
+							const inactivePane = this.getInactivePane();
+							if (file.parent && file.parent !== inactivePane.currentFolder) {
+								this.navigateToFolder(inactivePane, file.parent);
+								// Wait for next tick to ensure folder is loaded
+								setTimeout(() => {
+									this.selectFileByName(inactivePane, file.name);
+								}, 0);
+							} else {
+								// File is already in current folder of inactive pane
+								this.selectFileByName(inactivePane, file.name);
+							}
+						});
+				});
+			}
+
+			// Add "Reveal in file explorer" for files
+			menu.addItem((item) => {
+				item.setTitle('Reveal in file explorer')
+					.setIcon('external-link')
+					.onClick(() => {
+						// Show file in system file explorer
+						this.app.showInFolder(file.path);
+					});
+			});
+
+			menu.addSeparator();
+
 			// Add "Make a copy" for files
 			menu.addItem((item) => {
 				item.setTitle('Make a copy')
@@ -989,5 +1093,101 @@ export class MidnightCommanderView extends ItemView {
 				}, 0);
 			}
 		}
+	}
+
+	// ====================
+	// STATE PERSISTENCE
+	// ====================
+
+	/**
+	 * Get view data for session persistence
+	 */
+	getViewData(): any {
+		// Update view state before returning
+		this.updateViewState();
+		
+		return {
+			leftPath: this.viewState.leftPath,
+			rightPath: this.viewState.rightPath,
+			activePane: this.viewState.activePane,
+			leftSelectedIndex: this.viewState.leftSelectedIndex,
+			rightSelectedIndex: this.viewState.rightSelectedIndex
+		};
+	}
+
+	/**
+	 * Set view data for session restoration
+	 */
+	setViewData(data: any): void {
+		if (data && typeof data === 'object') {
+			this.viewState = {
+				leftPath: data.leftPath || this.app.vault.getRoot().path,
+				rightPath: data.rightPath || this.app.vault.getRoot().path,
+				activePane: data.activePane || 'left',
+				leftSelectedIndex: data.leftSelectedIndex || 0,
+				rightSelectedIndex: data.rightSelectedIndex || 0
+			};
+		}
+	}
+
+	/**
+	 * Restore view state from saved data (called during onOpen)
+	 */
+	private restoreViewState() {
+		try {
+			// Attempt to get folder for left pane
+			const leftFolder = this.app.vault.getAbstractFileByPath(this.viewState.leftPath);
+			if (leftFolder instanceof TFolder) {
+				this.leftPane.currentFolder = leftFolder;
+				this.leftPane.files = this.getSortedFiles(leftFolder);
+				
+				// Restore selected index, ensuring it's within bounds
+				this.leftPane.selectedIndex = Math.min(
+					this.viewState.leftSelectedIndex,
+					Math.max(0, this.leftPane.files.length - 1)
+				);
+			}
+
+			// Attempt to get folder for right pane
+			const rightFolder = this.app.vault.getAbstractFileByPath(this.viewState.rightPath);
+			if (rightFolder instanceof TFolder) {
+				this.rightPane.currentFolder = rightFolder;
+				this.rightPane.files = this.getSortedFiles(rightFolder);
+				
+				// Restore selected index, ensuring it's within bounds
+				this.rightPane.selectedIndex = Math.min(
+					this.viewState.rightSelectedIndex,
+					Math.max(0, this.rightPane.files.length - 1)
+				);
+			}
+
+			// Restore active pane
+			this.leftPane.isActive = this.viewState.activePane === 'left';
+			this.rightPane.isActive = this.viewState.activePane === 'right';
+			
+			// Update settings to match restored state
+			this.settings.activePane = this.viewState.activePane;
+		} catch (error) {
+			console.warn('Failed to restore view state:', error);
+			// Fall back to defaults if restoration fails
+			const rootFolder = this.app.vault.getRoot();
+			this.leftPane.currentFolder = rootFolder;
+			this.rightPane.currentFolder = rootFolder;
+			this.leftPane.files = this.getSortedFiles(rootFolder);
+			this.rightPane.files = this.getSortedFiles(rootFolder);
+		}
+	}
+
+	/**
+	 * Update view state with current pane states
+	 */
+	private updateViewState() {
+		this.viewState = {
+			leftPath: this.leftPane.currentFolder.path,
+			rightPath: this.rightPane.currentFolder.path,
+			activePane: this.leftPane.isActive ? 'left' : 'right',
+			leftSelectedIndex: this.leftPane.selectedIndex,
+			rightSelectedIndex: this.rightPane.selectedIndex
+		};
 	}
 }
