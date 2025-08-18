@@ -202,6 +202,20 @@ export class MidnightCommanderView extends ItemView {
 				return false;
 			});
 
+			// Quick search (Ctrl+F)
+			this.scope.register(["Mod"], "f", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.toggleQuickSearch();
+				return false;
+			});
+
+			// Alternative quick search shortcut (/)
+			this.scope.register([], "/", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.toggleQuickSearch();
+				return false;
+			});
+
 			// File navigation commands (Ctrl+Shift combinations)
 			this.scope.register(["Mod", "Shift"], "ArrowUp", (evt: KeyboardEvent) => {
 				evt.preventDefault();
@@ -1007,6 +1021,18 @@ export class MidnightCommanderView extends ItemView {
 			x: rect.left + rect.width / 2 - 200, // Center horizontally
 			y: rect.top + 100 // A bit down from top
 		});
+	}
+
+	/**
+	 * Toggle quick search overlay for current pane
+	 */
+	private toggleQuickSearch() {
+		// Call the global function exposed by DualPaneManager
+		if ((window as any).toggleQuickSearch) {
+			(window as any).toggleQuickSearch();
+		} else {
+			console.warn('Quick search toggle function not available');
+		}
 	}
 
 	// ====================

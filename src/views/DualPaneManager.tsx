@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { TAbstractFile } from 'obsidian';
 import { FilePane } from './FilePane';
 import { ResizeHandle } from '../components/ResizeHandle';
+import { QuickSearch } from '../components/QuickSearch';
 import { DualPaneManagerProps } from '../types/interfaces';
 
 export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
@@ -16,6 +17,14 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	const [containerHeight, setContainerHeight] = useState(400); // Default height
 	const [topPaneHeight, setTopPaneHeight] = useState(200); // Default to 50%
 	const [bottomPaneHeight, setBottomPaneHeight] = useState(200);
+	
+	// Quick search state
+	const [showLeftSearch, setShowLeftSearch] = useState(false);
+	const [showRightSearch, setShowRightSearch] = useState(false);
+	const [leftSearchQuery, setLeftSearchQuery] = useState('');
+	const [rightSearchQuery, setRightSearchQuery] = useState('');
+	const [leftFilteredFiles, setLeftFilteredFiles] = useState<TAbstractFile[]>([]);
+	const [rightFilteredFiles, setRightFilteredFiles] = useState<TAbstractFile[]>([]);
 
 	// Update container height when the component mounts or resizes
 	useEffect(() => {
@@ -93,6 +102,90 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	const handleRightNavigateToFolder = (folder: any) => {
 		onNavigateToFolder(folder, 'right');
 	};
+	
+	// Quick search handlers
+	const handleLeftSearch = (query: string, filteredFiles: TAbstractFile[]) => {
+		setLeftSearchQuery(query);
+		setLeftFilteredFiles(filteredFiles);
+	};
+	
+	const handleRightSearch = (query: string, filteredFiles: TAbstractFile[]) => {
+		setRightSearchQuery(query);
+		setRightFilteredFiles(filteredFiles);
+	};
+	
+	const handleLeftSearchClose = () => {
+		setShowLeftSearch(false);
+		setLeftSearchQuery('');
+		setLeftFilteredFiles([]);
+	};
+	
+	const handleRightSearchClose = () => {
+		setShowRightSearch(false);
+		setRightSearchQuery('');
+		setRightFilteredFiles([]);
+	};
+	
+	const handleLeftSearchSelect = (file: TAbstractFile) => {
+		// Select the file in the left pane and close search
+		const fileIndex = leftPane.files.findIndex(f => f.path === file.path);
+		if (fileIndex >= 0) {
+			onPaneStateChange('left', { selectedIndex: fileIndex });
+		}
+		handleLeftSearchClose();
+	};
+	
+	const handleRightSearchSelect = (file: TAbstractFile) => {
+		// Select the file in the right pane and close search
+		const fileIndex = rightPane.files.findIndex(f => f.path === file.path);
+		if (fileIndex >= 0) {
+			onPaneStateChange('right', { selectedIndex: fileIndex });
+		}
+		handleRightSearchClose();
+	};
+	
+	// Expose search toggle functions
+	useEffect(() => {
+		// Attach toggle functions to global window object for access from MidnightCommanderView
+		(window as any).toggleLeftSearch = () => {
+			if (leftPane.isActive) {
+				setShowLeftSearch(!showLeftSearch);
+				if (showLeftSearch) {
+					handleLeftSearchClose();
+				}
+			}
+		};
+		
+		(window as any).toggleRightSearch = () => {
+			if (rightPane.isActive) {
+				setShowRightSearch(!showRightSearch);
+				if (showRightSearch) {
+					handleRightSearchClose();
+				}
+			}
+		};
+		
+		(window as any).toggleQuickSearch = () => {
+			if (leftPane.isActive) {
+				setShowLeftSearch(!showLeftSearch);
+				if (showLeftSearch) {
+					handleLeftSearchClose();
+				}
+			} else if (rightPane.isActive) {
+				setShowRightSearch(!showRightSearch);
+				if (showRightSearch) {
+					handleRightSearchClose();
+				}
+			}
+		};
+		
+		return () => {
+			// Cleanup global functions
+			delete (window as any).toggleLeftSearch;
+			delete (window as any).toggleRightSearch;
+			delete (window as any).toggleQuickSearch;
+		};
+	}, [leftPane.isActive, rightPane.isActive, showLeftSearch, showRightSearch]);
 
 	return (
 		<div ref={containerRef} className="midnight-commander-dual-pane">
@@ -170,14 +263,37 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				className="pane-container pane-bottom"
 				style={{ height: `${bottomPaneHeight}px` }}
 			>
-				<FilePane
-					paneState={rightPane}
-					onStateChange={handleRightPaneStateChange}
-					onFileClick={handleRightFileClick}
-					onFileContextMenu={handleRightFileContextMenu}
-					onNavigateToFolder={handleRightNavigateToFolder}
-				/>
+					<FilePane
+						paneState={rightPane}
+						onStateChange={handleRightPaneStateChange}
+						onFileClick={handleRightFileClick}
+						onFileContextMenu={handleRightFileContextMenu}
+						onNavigateToFolder={handleRightNavigateToFolder}
+					/>
+				</div>
+				
+				{/* Quick search overlays */}
+				{showLeftSearch && (
+					<QuickSearch
+						files={leftPane.files}
+						isVisible={showLeftSearch}
+						onFilter={handleLeftSearch}
+						onClose={handleLeftSearchClose}
+						onSelect={handleLeftSearchSelect}
+						placeholder={`Search in ${leftPane.currentFolder.name}...`}
+					/>
+				)}
+				
+				{showRightSearch && (
+					<QuickSearch
+						files={rightPane.files}
+						isVisible={showRightSearch}
+						onFilter={handleRightSearch}
+						onClose={handleRightSearchClose}
+						onSelect={handleRightSearchSelect}
+						placeholder={`Search in ${rightPane.currentFolder.name}...`}
+					/>
+				)}
 			</div>
-		</div>
-	);
-};
+		);
+	};
