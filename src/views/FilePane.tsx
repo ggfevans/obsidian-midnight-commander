@@ -12,6 +12,11 @@ export const FilePane: React.FC<FilePaneProps> = ({
 	onNavigateToFolder,
 }) => {
 	const handleFileItemClick = (file: TAbstractFile, event: React.MouseEvent) => {
+		// Activate this pane when clicked (if not already active)
+		if (!paneState.isActive) {
+			onStateChange({ isActive: true });
+		}
+		
 		// Update selection in pane state
 		const fileIndex = paneState.files.indexOf(file);
 		if (fileIndex >= 0) {
@@ -119,7 +124,8 @@ export const FilePane: React.FC<FilePaneProps> = ({
 					className="file-list file-list-virtual"
 					style={{
 						height: '100%',
-						overflow: 'auto',
+						overflowY: 'auto',
+						overflowX: 'hidden',
 					}}
 				>
 					<div

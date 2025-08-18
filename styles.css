@@ -135,6 +135,7 @@
 .file-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 4px 0;
 }
 
@@ -269,8 +270,9 @@
 
 /* Virtual scrolling styles */
 .file-list-virtual {
-  /* Ensure proper scrolling behavior */
-  overflow: auto;
+  /* Ensure proper scrolling behavior - vertical only */
+  overflow-y: auto;
+  overflow-x: hidden;
   height: 100%;
   position: relative;
 }
@@ -278,8 +280,9 @@
 .file-list-virtual .file-item {
   /* Ensure file items work properly with virtual positioning */
   position: relative;
-  width: 100%;
+  width: calc(100% - 8px); /* Account for margins without causing overflow */
   margin: 0 4px;
+  box-sizing: border-box;
 }
 
 /* Performance optimizations for virtual scrolling */

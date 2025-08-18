@@ -257,6 +257,19 @@ export class MidnightCommanderView extends ItemView {
 	// Event handlers for React components
 	private handlePaneStateChange(paneId: 'left' | 'right', newState: Partial<PaneState>) {
 		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+		
+		// Handle pane activation - when one pane becomes active, deactivate the other
+		if (newState.isActive === true) {
+			const otherPane = paneId === 'left' ? this.rightPane : this.leftPane;
+			otherPane.isActive = false;
+			this.settings.activePane = paneId;
+			this.plugin.saveSettings();
+			
+			// Clear multi-selections when switching panes to avoid confusion
+			this.leftPane.selectedFiles.clear();
+			this.rightPane.selectedFiles.clear();
+		}
+		
 		Object.assign(pane, newState);
 		this.renderDualPane();
 	}
