@@ -4,20 +4,18 @@ import { EventRef, Component, App, Scope } from 'obsidian';
  * Central event manager for handling plugin lifecycle and cleanup
  * Ensures all events, intervals, and DOM listeners are properly disposed
  */
-export class EventManager extends Component {
+export class EventManager {
     private eventRefs: EventRef[] = [];
     private intervals: number[] = [];
     private domCleanupCallbacks: Array<() => void> = [];
     private scopes: Scope[] = [];
+    private cleanupFunctions: Array<() => void> = [];
 
     constructor(
         private app: App,
         private parentComponent?: Component
     ) {
-        super();
-        if (parentComponent) {
-            parentComponent.addChild(this);
-        }
+        // No need to extend Component - we'll manage our own cleanup
     }
 
     /**
@@ -46,7 +44,7 @@ export class EventManager extends Component {
         }
         
         this.eventRefs.push(eventRef);
-        this.register(() => this.app.workspace.offref(eventRef));
+        this.cleanupFunctions.push(() => this.app.workspace.offref(eventRef));
     }
 
     /**
@@ -65,7 +63,7 @@ export class EventManager extends Component {
         };
         
         this.domCleanupCallbacks.push(cleanup);
-        this.register(cleanup);
+        this.cleanupFunctions.push(cleanup);
     }
 
     /**
@@ -84,7 +82,7 @@ export class EventManager extends Component {
         };
         
         this.domCleanupCallbacks.push(cleanup);
-        this.register(cleanup);
+        this.cleanupFunctions.push(cleanup);
     }
 
     /**
@@ -94,7 +92,7 @@ export class EventManager extends Component {
         const intervalId = window.setInterval(callback, intervalMs);
         this.intervals.push(intervalId);
         
-        this.register(() => {
+        this.cleanupFunctions.push(() => {
             window.clearInterval(intervalId);
             const index = this.intervals.indexOf(intervalId);
             if (index > -1) {
@@ -111,7 +109,7 @@ export class EventManager extends Component {
     registerTimeout(callback: () => void, delayMs: number): number {
         const timeoutId = window.setTimeout(callback, delayMs);
         
-        this.register(() => {
+        this.cleanupFunctions.push(() => {
             window.clearTimeout(timeoutId);
         });
         
@@ -123,7 +121,7 @@ export class EventManager extends Component {
      */
     registerScope(scope: Scope): void {
         this.scopes.push(scope);
-        this.register(() => {
+        this.cleanupFunctions.push(() => {
             const index = this.scopes.indexOf(scope);
             if (index > -1) {
                 this.scopes.splice(index, 1);
@@ -135,7 +133,7 @@ export class EventManager extends Component {
      * Register a custom cleanup callback
      */
     registerCleanup(cleanup: () => void): void {
-        this.register(cleanup);
+        this.cleanupFunctions.push(cleanup);
     }
 
     /**
@@ -153,7 +151,7 @@ export class EventManager extends Component {
             intervals: this.intervals.length,
             domCleanups: this.domCleanupCallbacks.length,
             scopes: this.scopes.length,
-            totalRegistrations: this._children?.size || 0
+            totalRegistrations: this.cleanupFunctions.length
         };
     }
 
@@ -167,26 +165,21 @@ export class EventManager extends Component {
     onunload(): void {
         console.log('EventManager cleanup - stats:', this.getStats());
         
-        // Clear all event references
-        this.eventRefs.forEach(eventRef => {
-            this.app.workspace.offref(eventRef);
+        // Run all cleanup functions
+        this.cleanupFunctions.forEach(cleanup => {
+            try {
+                cleanup();
+            } catch (error) {
+                console.error('Error during EventManager cleanup:', error);
+            }
         });
+        
+        // Clear all arrays
         this.eventRefs = [];
-
-        // Clear all intervals
-        this.intervals.forEach(intervalId => {
-            window.clearInterval(intervalId);
-        });
         this.intervals = [];
-
-        // Clear DOM cleanup callbacks
         this.domCleanupCallbacks = [];
-
-        // Clear scopes
         this.scopes = [];
-
-        // Call parent cleanup
-        super.onunload();
+        this.cleanupFunctions = [];
     }
 }
 

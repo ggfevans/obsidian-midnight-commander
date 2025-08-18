@@ -1,4 +1,4 @@
-import { App, TFile, CachedMetadata, EventRef, Component } from 'obsidian';
+import { App, TFile, TFolder, TAbstractFile, CachedMetadata, EventRef, Component } from 'obsidian';
 
 interface FileCacheEntry {
     filePath: string;
@@ -228,12 +228,12 @@ export class FileCache extends Component {
      */
     async prefetchFolder(folderPath: string): Promise<void> {
         const folder = this.app.vault.getAbstractFileByPath(folderPath);
-        if (!folder || !(folder.children)) {
+        if (!folder || !(folder instanceof TFolder)) {
             return;
         }
 
         const filesToPrefetch = folder.children
-            .filter(child => child instanceof TFile)
+            .filter((child: TAbstractFile) => child instanceof TFile)
             .slice(0, 50); // Limit prefetch to avoid overwhelming the system
 
         for (const file of filesToPrefetch) {
