@@ -204,6 +204,12 @@ export class MidnightCommanderView extends ItemView {
 		this.rightPane.isActive = !this.rightPane.isActive;
 		this.settings.activePane = this.leftPane.isActive ? 'left' : 'right';
 		this.plugin.saveSettings();
+		
+		// Clear multi-selections when switching panes to avoid confusion
+		// Keep only the current cursor selection
+		this.leftPane.selectedFiles.clear();
+		this.rightPane.selectedFiles.clear();
+		
 		this.renderDualPane(); // Re-render to update active state
 	}
 

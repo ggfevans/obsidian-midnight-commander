@@ -145,9 +145,11 @@ export const FilePane: React.FC<FilePaneProps> = ({
 										transform: `translateY(${virtualItem.start}px)`,
 									}}
 								>
+									{/* Only show cursor selection on active pane */}
+									{/* Multi-selection can show on any pane, but only when files are actually selected */}
 									<FileItem
 										file={file}
-										isSelected={virtualItem.index === paneState.selectedIndex}
+										isSelected={paneState.isActive && virtualItem.index === paneState.selectedIndex}
 										isHighlighted={paneState.selectedFiles.has(file.path)}
 										onClick={handleFileItemClick}
 										onContextMenu={handleFileItemContextMenu}

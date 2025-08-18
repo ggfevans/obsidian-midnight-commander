@@ -138,7 +138,7 @@
   padding: 4px 0;
 }
 
-/* Individual file items */
+/* Individual file items - using Obsidian navigation patterns */
 .file-item {
   display: flex;
   align-items: center;
@@ -150,21 +150,33 @@
   min-height: 32px;
 }
 
-.file-item:hover {
-  background-color: var(--background-modifier-hover);
+/* Hover state - only visible on active panes */
+.file-pane.active .file-item:hover {
+  background-color: var(--nav-item-background-hover, var(--background-modifier-hover));
+  color: var(--nav-item-color-hover, var(--text-normal));
 }
 
-.file-item.selected {
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
+/* Cursor selection - primary navigation state (blue highlight) */
+.file-pane.active .file-item.is-active {
+  background-color: var(--nav-item-background-active, var(--interactive-accent));
+  color: var(--nav-item-color-active, var(--text-on-accent));
+  font-weight: var(--nav-item-weight-active, 500);
 }
 
-.file-item.selected:hover {
+.file-pane.active .file-item.is-active:hover {
   background-color: var(--interactive-accent-hover);
 }
 
-.file-item.highlighted {
-  background-color: var(--background-modifier-success);
+/* Multi-selection state (green highlight) - can appear on any pane */
+.file-item.is-selected {
+  background-color: var(--nav-item-background-selected, var(--background-modifier-success));
+  color: var(--nav-item-color-selected, var(--text-normal));
+}
+
+/* When both selected and active (cursor on a multi-selected item) */
+.file-pane.active .file-item.is-active.is-selected {
+  background-color: var(--nav-item-background-active, var(--interactive-accent));
+  color: var(--nav-item-color-active, var(--text-on-accent));
 }
 
 /* File item icon */
@@ -212,10 +224,6 @@
   line-height: 1;
 }
 
-/* Keyboard focus styles */
-.file-pane.active .file-item.selected {
-  box-shadow: 0 0 0 1px var(--interactive-accent);
-}
 
 /* Scrollbar styling */
 .file-list::-webkit-scrollbar {
