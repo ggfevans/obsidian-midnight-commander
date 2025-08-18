@@ -1,22 +1,62 @@
 # Obsidian Midnight Commander
 
-A dual-pane file manager for Obsidian inspired by the classic Midnight Commander, built with React and TypeScript.
+A powerful dual-pane file manager for Obsidian inspired by the classic Midnight Commander, built with React and TypeScript. This plugin integrates Quick Explorer's advanced navigation system to provide a modern, keyboard-driven file management experience.
 
 ## Features
 
+### Core Dual-Pane Interface
 - **Dual-pane interface**: Navigate files with two independent panes
-- **Keyboard navigation**: Tab to switch panes, arrow keys to navigate, Enter to open
-- **React-powered UI**: Modern, responsive interface built with React 18
-- **State management**: Uses Recoil for efficient state management across panes
+- **Smart pane management**: Visual indicators for active pane with accent colors
+- **Responsive layouts**: Automatically adapts to different workspace orientations
+- **Virtual scrolling**: Efficient handling of large directories
+
+### Advanced Navigation (Quick Explorer Integration)
+- **PopupMenu system**: Keyboard-navigable menus with vim-style bindings (hjkl, gg, G)
+- **Incremental fuzzy search**: Real-time search with highlighting using Fuse.js
+- **Folder navigation menu (F9)**: Quick Explorer-style folder browsing with auto-preview
+- **Command palette (Ctrl+P)**: Quick access to common file operations
+- **File navigation commands**: Jump to next/previous/first/last files across folders
+
+### Auto-Preview & Context Menus
+- **Auto-preview with hover editors**: File content preview on navigation with configurable delays
+- **Comprehensive context menus**: Right-click and keyboard (\\) context menus
+- **Cascade positioning**: Smart menu placement that respects viewport boundaries
+- **File operations**: Copy, move, rename, delete with confirmation dialogs
+
+### Breadcrumb Navigation
+- **Interactive breadcrumbs**: Click to navigate to parent directories
+- **Path visualization**: Clear visual hierarchy of current location
+- **Configurable alignment**: Center or left-align breadcrumbs per preference
+
+### Theme Integration & Polish
+- **Native Obsidian styling**: Seamless integration with all themes
+- **CSS variable mapping**: Automatic adaptation to theme color schemes
+- **High-DPI optimizations**: Crisp rendering on retina displays
+- **Accessibility support**: Focus traps, reduced motion, high contrast modes
+- **Popular theme compatibility**: Tested with Minimal, Things, Catppuccin, Nord themes
+
+### Keyboard-Centric Design
+- **F-key operations**: F5 (copy), F6 (move), F7 (new folder), F8 (delete)
+- **Multi-select support**: Space to toggle, Ctrl+A/D for select/deselect all
+- **Navigation shortcuts**: Ctrl+↑/↓ for file navigation, Ctrl+Shift+↑/↓ for first/last
+- **Context menus**: \\ key for keyboard-accessible context operations
+
+### Modern Architecture
+- **React 18**: Modern, responsive interface with hooks and concurrent features
 - **TypeScript**: Full type safety and excellent developer experience
+- **Component-based**: Modular, testable, and maintainable codebase
+- **State management**: Uses Recoil for efficient state management across panes
 
-## Current Status
+## Settings
 
-This plugin is in **early development**. Current features include:
-- Basic dual-pane file browser
-- Keyboard navigation between panes
-- File and folder browsing
-- Integration with Obsidian's workspace system
+Access settings through Obsidian's Settings → Community plugins → Midnight Commander:
+
+- **Open view on startup**: Automatically open the plugin when Obsidian starts
+- **Show hidden files**: Toggle visibility of dot-files and hidden directories
+- **Show breadcrumbs**: Enable/disable breadcrumb navigation
+- **Center-align breadcrumbs**: Choose breadcrumb alignment preference
+- **Auto-preview delay**: Customize hover preview delay (default: 300ms)
+- **Keymap profile**: Choose between default and vim-style keybindings
 
 ## First time developing plugins?
 
@@ -93,6 +133,14 @@ Or for development:
 - If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
   - `eslint .\src\`
 
+## Credits & Acknowledgements
+
+This plugin draws inspiration and technical insights from several outstanding projects:
+
+- [Quick Explorer](https://github.com/pjeby/quick-explorer) by PJ Eby - An exceptional file navigation plugin that provides breadcrumb navigation and keyboard-driven menus. Our keyboard navigation and file traversal systems draw significant inspiration from Quick Explorer's excellent implementation.
+
+- The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach.
+
 ## Funding URL
 
 You can include funding URLs where people who use your plugin can financially support it.
@@ -116,6 +164,42 @@ If you have multiple URLs, you can also do:
 	}
 }
 ```
+
+## Design Guidelines
+
+### Navigation Styling
+
+This plugin follows Obsidian's navigation component styling patterns to ensure visual consistency with the native file explorer. We use Obsidian's CSS variables for navigation components as defined in the [Navigation CSS Variables Reference](https://docs.obsidian.md/Reference/CSS+variables/Components/Navigation).
+
+Key variables we use:
+- `--nav-item-background-hover` - Background on hover
+- `--nav-item-background-active` - Background for active/selected items
+- `--nav-item-background-selected` - Background for multi-selected items
+- `--nav-item-color-hover` - Text color on hover
+- `--nav-item-color-active` - Text color for active items
+- `--nav-item-color-selected` - Text color for selected items
+- `--nav-item-weight-hover` - Font weight on hover
+- `--nav-item-weight-active` - Font weight for active items
+
+**Usage examples:**
+```css
+.file-item.is-active {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+}
+
+.file-item:hover {
+  background-color: var(--nav-item-background-hover);
+  color: var(--nav-item-color-hover);
+}
+
+.file-item.is-selected {
+  background-color: var(--nav-item-background-selected);
+  color: var(--nav-item-color-selected);
+}
+```
+
+This approach ensures the plugin automatically adapts to different themes and maintains visual consistency with Obsidian's file explorer.
 
 ## API Documentation
 

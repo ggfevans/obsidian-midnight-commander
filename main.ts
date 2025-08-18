@@ -1,3 +1,7 @@
+/**
+ * Context-menu implementation notes can be found in gVault:
+ * [[01-PROJECTS/obsidian-midnight-commander/Context-Menu Implementation]]
+ */
 import {
 	Plugin,
 	WorkspaceLeaf,
@@ -5,6 +9,8 @@ import {
 
 import { MidnightCommanderView, VIEW_TYPE_MIDNIGHT_COMMANDER } from './src/views/MidnightCommanderView';
 import { MidnightCommanderSettings } from './src/types/interfaces';
+import { NavigationService } from './src/services/NavigationService';
+import { MidnightCommanderSettingTab } from './src/settings/SettingsTab';
 
 const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	showHiddenFiles: false,
@@ -12,15 +18,26 @@ const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	vimBindings: false,
 	showFileIcons: true,
 	activePane: 'left',
+	showBreadcrumbs: true,
+	previewDelay: 300,
+	keymapProfile: 'default',
+	centerBreadcrumbs: false,
 };
 
 export default class MidnightCommanderPlugin extends Plugin {
 	settings: MidnightCommanderSettings;
+	navigationService: NavigationService;
 
 	async onload() {
 		console.log('Loading Obsidian Midnight Commander plugin');
 		
 		await this.loadSettings();
+
+		// Initialize services
+		this.navigationService = new NavigationService(this.app);
+
+		// Add settings tab
+		this.addSettingTab(new MidnightCommanderSettingTab(this.app, this));
 
 		// Register the custom view
 		this.registerView(
@@ -40,6 +57,31 @@ export default class MidnightCommanderPlugin extends Plugin {
 			id: 'open-midnight-commander',
 			name: 'Open Midnight Commander',
 			callback: () => this.activateView(),
+		});
+
+		// File navigation commands
+		this.addCommand({
+			id: 'navigate-to-next-file',
+			name: 'Navigate to next file',
+			callback: () => this.navigateToFile(1, true),
+		});
+
+		this.addCommand({
+			id: 'navigate-to-previous-file',
+			name: 'Navigate to previous file',
+			callback: () => this.navigateToFile(-1, true),
+		});
+
+		this.addCommand({
+			id: 'navigate-to-first-file',
+			name: 'Navigate to first file in folder',
+			callback: () => this.navigateToFile(-1, false),
+		});
+
+		this.addCommand({
+			id: 'navigate-to-last-file',
+			name: 'Navigate to last file in folder',
+			callback: () => this.navigateToFile(1, false),
 		});
 
 		// Open view on startup if enabled
@@ -84,6 +126,19 @@ export default class MidnightCommanderPlugin extends Plugin {
 		// "Reveal" the leaf in case it is in a collapsed sidebar
 		if (leaf) {
 			workspace.revealLeaf(leaf);
+		}
+	}
+
+	/**
+	 * Navigate to next/previous/first/last file using NavigationService
+	 */
+	private navigateToFile(direction: number, relative: boolean) {
+		const activeFile = this.app.workspace.getActiveFile();
+		if (!activeFile) return;
+
+		const targetFile = this.navigationService.navigateFile(activeFile, direction, relative);
+		if (targetFile) {
+			this.app.workspace.getLeaf().openFile(targetFile);
 		}
 	}
 }

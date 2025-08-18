@@ -1,47 +1,108 @@
-/* Midnight Commander Plugin Styles */
+/* Midnight Commander Plugin Styles - Native Obsidian Integration */
+
+/* Import PopupMenu and theme compatibility styles */
+@import url('./src/styles/theme-compatibility.css');
+@import url('./src/styles/popup-menu.css');
 
 .midnight-commander-view {
   height: 100%;
   display: flex;
   flex-direction: column;
   background-color: var(--background-primary);
+  font-family: var(--font-interface);
 }
 
-/* Header with pane titles */
-.midnight-commander-header {
-  display: flex;
-  height: 36px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background-color: var(--background-secondary);
-}
-
-.pane-header {
-  flex: 1;
+/* Individual pane headers - match native nav-header styling */
+.file-pane .pane-header {
   display: flex;
   align-items: center;
-  padding: 0 12px;
-  border-right: 1px solid var(--background-modifier-border);
+  justify-content: space-between;
+  height: var(--nav-item-size, 32px);
+  padding: 0 var(--nav-item-padding-x, 16px);
+  background-color: var(--background-primary);
+  border-bottom: var(--nav-header-border-width, 1px) solid var(--background-modifier-border);
+  flex-shrink: 0;
+  font-size: var(--nav-item-size, 13px);
 }
 
-.pane-header:last-child {
-  border-right: none;
+.file-pane.active .pane-header {
+  background-color: var(--background-primary);
+  border-bottom-color: var(--interactive-accent);
 }
 
+.pane-path {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Match native nav-folder-title styling */
 .pane-title {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
+  font-size: var(--nav-item-size, 13px);
+  color: var(--nav-folder-title-color, var(--text-muted));
+  font-weight: var(--nav-folder-title-weight, 500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+  line-height: var(--line-height-tight);
 }
 
-/* Main dual panes container */
-.midnight-commander-panes {
-  flex: 1;
+.file-pane.active .pane-title {
+  color: var(--nav-folder-title-color, var(--text-normal));
+  font-weight: var(--nav-folder-title-weight-active, 600);
+}
+
+/* File count styling to match native */
+.pane-file-count {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.file-pane.active .pane-file-count {
+  color: var(--text-muted);
+}
+
+.pane-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pane-selection-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  background-color: var(--background-modifier-border);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.file-pane.active .pane-selection-count {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.pane-active-indicator {
+  font-size: 10px;
+  color: var(--interactive-accent);
+  line-height: 1;
+}
+
+/* Main dual panes container - integrate seamlessly like native explorer */
+.midnight-commander-dual-pane {
+  height: 100%;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Allow flex children to shrink */
+  overflow: hidden;
+  /* Remove border - should look like native file explorer */
+  border: none;
+  border-radius: 0;
 }
 
 /* Individual file panes */
@@ -84,87 +145,131 @@
 .file-list {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 4px 0;
 }
 
-/* Individual file items */
+/* File items - exact native styling like .nav-file-title */
 .file-item {
   display: flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 1px 2px 1px 8px;
   cursor: pointer;
-  border-radius: 3px;
-  margin: 1px 4px;
-  transition: background-color 0.1s ease;
-  min-height: 32px;
+  border-radius: 6px;
+  margin: 1px 8px;
+  transition: color 0.1s ease, background-color 0.1s ease;
+  min-height: 22px;
+  font-size: 13px;
+  color: var(--text-normal);
+  line-height: 1.3;
+  font-weight: 400;
 }
 
+/* Default inactive pane styling */
+.file-pane.inactive .file-item {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* Hover state - match native nav-file-title:hover */
 .file-item:hover {
-  background-color: var(--background-modifier-hover);
+  background-color: var(--nav-item-background-hover);
+  color: var(--nav-item-color-hover, var(--text-normal));
 }
 
-.file-item.selected {
-  background-color: var(--interactive-accent);
-  color: var(--text-on-accent);
+/* Only show hover on active panes for better UX */
+.file-pane.inactive .file-item:hover {
+  background-color: var(--nav-item-background-hover);
+  opacity: 1;
 }
 
-.file-item.selected:hover {
-  background-color: var(--interactive-accent-hover);
+/* Active/selected state - match native nav-file-title.is-active */
+.file-item.is-active {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+  font-weight: var(--nav-item-weight-active, var(--nav-file-title-weight-active, 500));
 }
 
-.file-item.highlighted {
-  background-color: var(--background-modifier-success);
+.file-item.is-active:hover {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
 }
 
-/* File item icon */
+/* Multi-selection state */
+.file-item.is-selected {
+  background-color: var(--nav-item-background-selected, rgba(var(--color-accent), 0.1));
+  color: var(--nav-item-color-selected, var(--text-normal));
+}
+
+/* Combined active and selected */
+.file-item.is-active.is-selected {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+}
+
+/* File item icon - match native icon styling */
 .file-item-icon {
-  width: 16px;
-  height: 16px;
-  margin-right: 10px;
+  width: var(--nav-item-icon-size, 16px);
+  height: var(--nav-item-icon-size, 16px);
+  margin-right: var(--nav-item-icon-margin, 8px);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--nav-item-icon-color, var(--icon-color));
 }
 
 .file-item-icon svg {
-  width: 14px;
-  height: 14px;
+  width: var(--icon-size, 16px);
+  height: var(--icon-size, 16px);
   color: currentColor;
+}
+
+/* Folder icons - match native folder color */
+.file-item.folder {
+  color: var(--text-accent);
+}
+
+.file-item.folder .file-item-icon {
+  color: var(--text-accent);
 }
 
 .file-item.folder .file-item-icon svg {
   color: var(--text-accent);
 }
 
+.file-item.folder .file-item-name {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
 /* File item content */
 .file-item-content {
   flex: 1;
-  min-width: 0; /* Allow text to shrink */
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
+/* File name - match native nav-file-title text styling */
 .file-item-name {
-  font-size: 13px;
-  font-weight: 400;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: inherit;
 }
 
+/* File size metadata */
 .file-item-size {
-  font-size: 11px;
+  font-size: var(--font-ui-smaller);
   color: var(--text-faint);
   margin-top: 1px;
   line-height: 1;
 }
 
-/* Keyboard focus styles */
-.file-pane.active .file-item.selected {
-  box-shadow: 0 0 0 1px var(--interactive-accent);
-}
 
 /* Scrollbar styling */
 .file-list::-webkit-scrollbar {
@@ -192,4 +297,307 @@
   padding: 40px 20px;
   color: var(--text-faint);
   font-style: italic;
+}
+
+.file-list-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--text-faint);
+  font-style: italic;
+}
+
+.file-list-empty p {
+  margin: 0;
+  padding: 40px 20px;
+}
+
+/* Virtual scrolling styles */
+.file-list-virtual {
+  /* Ensure proper scrolling behavior - vertical only */
+  overflow-y: auto;
+  overflow-x: hidden;
+  height: 100%;
+  position: relative;
+}
+
+.file-list-virtual .file-item {
+  /* Ensure file items work properly with virtual positioning */
+  position: relative;
+  width: calc(100% - 8px); /* Account for margins without causing overflow */
+  margin: 0 4px;
+  box-sizing: border-box;
+}
+
+/* Performance optimizations for virtual scrolling */
+.file-list-virtual * {
+  /* Enable hardware acceleration for smooth scrolling */
+  transform: translateZ(0);
+}
+
+/* ============================= */
+/* RESIZE HANDLE STYLES */
+/* ============================= */
+
+.resize-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none; /* Allow clicks to pass through to panes */
+  z-index: 10;
+}
+
+.resize-handle {
+  height: 8px;
+  cursor: ns-resize;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.resize-handle:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.resize-handle.dragging {
+  background-color: var(--interactive-accent);
+  cursor: ns-resize !important;
+}
+
+.resize-handle-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover .resize-handle-grip {
+  background-color: var(--background-primary);
+  border-color: var(--text-faint);
+}
+
+.resize-handle.dragging .resize-handle-grip {
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.resize-handle-line {
+  width: 12px;
+  height: 1px;
+  background-color: var(--text-faint);
+  opacity: 0.5;
+}
+
+.resize-handle.dragging .resize-handle-line {
+  background-color: var(--text-on-accent);
+  opacity: 1;
+}
+
+.resize-handle-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.resize-handle-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--text-faint);
+  opacity: 0.7;
+}
+
+.resize-handle.dragging .resize-handle-dots span {
+  background-color: var(--text-on-accent);
+  opacity: 1;
+}
+
+/* ============================= */
+/* PANE CONTAINER STYLES */
+/* ============================= */
+
+.pane-container {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0; /* Prevent unwanted shrinking */
+  /* Remove borders to integrate seamlessly like native file explorer */
+  border: none;
+}
+
+.pane-container.pane-top {
+  border-bottom: none;
+}
+
+.pane-container.pane-bottom {
+  border-top: none;
+}
+
+/* Ensure file panes within containers take full height */
+.pane-container .file-pane {
+  height: 100%;
+  border-bottom: none; /* Remove border since container handles it */
+  min-height: 0; /* Allow shrinking when necessary */
+}
+
+/* ============================= */
+/* BREADCRUMB NAVIGATION STYLES */
+/* ============================= */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.breadcrumb-segment {
+  display: inline-block;
+  padding: 1px 2px;
+  margin: 0;
+  border: none;
+  background: transparent !important;
+  color: var(--nav-folder-title-color, var(--text-muted));
+  font-size: var(--font-ui-small);
+  font-weight: var(--nav-folder-title-weight, 500);
+  cursor: pointer;
+  border-radius: 2px;
+  transition: none;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: var(--line-height-tight);
+  font-family: var(--font-interface);
+  outline: none !important;
+  text-decoration: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+/* Only show background on actual hover, not focus */
+.breadcrumb-segment:hover:not(:focus) {
+  background-color: var(--nav-item-background-hover) !important;
+  color: var(--nav-item-color-hover, var(--text-normal));
+  transition: background-color var(--anim-duration-fast) ease, color var(--anim-duration-fast) ease;
+}
+
+/* Allow hover even when focused */
+.breadcrumb-segment:focus:hover {
+  background-color: var(--nav-item-background-hover) !important;
+  color: var(--nav-item-color-hover, var(--text-normal));
+  transition: background-color var(--anim-duration-fast) ease, color var(--anim-duration-fast) ease;
+}
+
+.breadcrumb-segment:active {
+  background-color: var(--nav-item-background-active) !important;
+  color: var(--nav-item-color-active);
+  transform: translateY(1px);
+  transition: none;
+}
+
+/* Force transparent background when focused but not hovered */
+.breadcrumb-segment:focus:not(:hover):not(:active) {
+  background: transparent !important;
+  color: var(--nav-folder-title-color, var(--text-muted));
+  transition: none;
+}
+
+.breadcrumb-segment.current {
+  color: var(--nav-folder-title-color, var(--text-normal));
+  font-weight: var(--nav-folder-title-weight-active, 600);
+  cursor: default;
+  background: transparent;
+}
+
+.breadcrumb-segment.current:hover {
+  background-color: transparent;
+  color: var(--nav-folder-title-color, var(--text-normal));
+}
+
+.breadcrumb-separator {
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+  margin: 0;
+  opacity: 0.6;
+  padding: 0 2px;
+}
+
+.breadcrumb-separator svg {
+  width: 6px;
+  height: 6px;
+}
+
+/* Active pane breadcrumb styling */
+.file-pane.active .breadcrumb-segment {
+	color: var(--nav-folder-title-color, var(--text-normal));
+}
+
+.file-pane.active .breadcrumb-segment.current {
+	color: var(--nav-folder-title-color, var(--text-normal));
+	font-weight: var(--nav-folder-title-weight-active, 600);
+}
+
+/* Centered breadcrumbs */
+.breadcrumb.centered {
+	justify-content: center;
+}
+
+/* High DPI optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+	.breadcrumb-separator svg {
+		shape-rendering: geometricPrecision;
+	}
+	
+	.file-item-icon svg {
+		shape-rendering: geometricPrecision;
+	}
+}
+
+/* Focus traps for better accessibility */
+.popup-menu:focus-within {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+/* Non-ASCII search improvements */
+.popup-menu .search-highlight {
+	unicode-bidi: plaintext;
+	text-orientation: mixed;
+}
+
+/* Polish: smooth transitions */
+.file-item,
+.breadcrumb-segment,
+.popup-menu-item {
+	transition: background-color 0.15s ease, 
+				color 0.15s ease,
+				transform 0.1s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.file-item,
+	.breadcrumb-segment,
+	.popup-menu-item {
+		transition: none;
+	}
 }

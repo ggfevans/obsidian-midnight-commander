@@ -1,0 +1,153 @@
+/* Theme Compatibility Layer - Quick Explorer Style Integration */
+/* Maps Quick Explorer design patterns to Obsidian's CSS variables */
+
+:root {
+	/* Quick Explorer-style popup menu theme variables */
+	--mc-popup-bg: var(--background-primary);
+	--mc-popup-border: var(--background-modifier-border);
+	--mc-popup-shadow: var(--shadow-s);
+	
+	/* Menu item theming */
+	--mc-menu-item-bg: transparent;
+	--mc-menu-item-bg-hover: var(--nav-item-background-hover);
+	--mc-menu-item-bg-active: var(--nav-item-background-active);
+	--mc-menu-item-color: var(--text-normal);
+	--mc-menu-item-color-hover: var(--nav-item-color-hover, var(--text-normal));
+	--mc-menu-item-color-active: var(--nav-item-color-active);
+	--mc-menu-item-color-muted: var(--text-muted);
+	
+	/* Search/fuzzy highlighting */
+	--mc-search-highlight-bg: var(--text-highlight-bg);
+	--mc-search-highlight-color: var(--text-accent);
+	--mc-search-match-bg: rgba(var(--color-accent-rgb), 0.2);
+	
+	/* Breadcrumb theming */
+	--mc-breadcrumb-bg: var(--background-secondary);
+	--mc-breadcrumb-border: var(--background-modifier-border);
+	--mc-breadcrumb-color: var(--nav-folder-title-color, var(--text-muted));
+	--mc-breadcrumb-color-active: var(--nav-folder-title-color, var(--text-normal));
+	--mc-breadcrumb-separator: var(--text-faint);
+	
+	/* File pane theming */
+	--mc-pane-bg: var(--background-primary);
+	--mc-pane-bg-inactive: var(--background-secondary);
+	--mc-pane-border: var(--background-modifier-border);
+	--mc-pane-accent: var(--interactive-accent);
+	
+	/* File item theming */
+	--mc-file-item-bg: transparent;
+	--mc-file-item-bg-hover: var(--nav-item-background-hover);
+	--mc-file-item-bg-selected: var(--nav-item-background-selected, rgba(var(--color-accent), 0.1));
+	--mc-file-item-bg-active: var(--nav-item-background-active);
+	--mc-file-item-color: var(--text-normal);
+	--mc-file-item-color-folder: var(--text-accent);
+	--mc-file-item-color-muted: var(--text-muted);
+	
+	/* Icon theming */
+	--mc-icon-color: var(--icon-color);
+	--mc-icon-color-folder: var(--text-accent);
+	--mc-icon-size: var(--icon-size, 16px);
+}
+
+/* Dark theme optimizations */
+.theme-dark {
+	--mc-popup-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+	--mc-search-match-bg: rgba(var(--color-accent-rgb), 0.15);
+	--mc-pane-bg-inactive: color-mix(in srgb, var(--background-secondary) 90%, transparent);
+}
+
+/* Light theme optimizations */  
+.theme-light {
+	--mc-popup-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+	--mc-search-match-bg: rgba(var(--color-accent-rgb), 0.25);
+	--mc-pane-bg-inactive: color-mix(in srgb, var(--background-secondary) 95%, transparent);
+}
+
+/* High contrast theme support */
+@media (prefers-contrast: high) {
+	:root {
+		--mc-pane-border: var(--background-modifier-border-focus);
+		--mc-file-item-bg-active: var(--background-modifier-border-focus);
+		--mc-search-highlight-bg: var(--text-selection);
+	}
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	.popup-menu,
+	.breadcrumb-segment,
+	.file-item,
+	.pane-header {
+		transition: none !important;
+		animation: none !important;
+	}
+}
+
+/* High DPI display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 2dppx) {
+	.popup-menu {
+		border-width: 0.5px;
+	}
+	
+	.breadcrumb-separator svg,
+	.file-item-icon svg {
+		shape-rendering: geometricPrecision;
+	}
+}
+
+/* Focus outline improvements for accessibility */
+.breadcrumb-segment:focus-visible,
+.popup-menu-item:focus-visible,
+.file-item:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+	border-radius: 3px;
+}
+
+/* Ensure proper contrast ratios */
+@supports (color: color-contrast(white vs black)) {
+	:root {
+		--mc-menu-item-color-active: color-contrast(var(--nav-item-background-active) vs var(--text-normal), var(--text-on-accent));
+	}
+}
+
+/* Popular theme compatibility overrides */
+
+/* Minimal Theme compatibility */
+body.minimal-theme {
+	--mc-popup-bg: var(--background-primary-alt, var(--background-primary));
+	--mc-pane-bg: var(--background-primary-alt, var(--background-primary));
+}
+
+/* Things Theme compatibility */
+body.things-theme {
+	--mc-pane-accent: var(--accent-color, var(--interactive-accent));
+	--mc-file-item-color-folder: var(--accent-color, var(--text-accent));
+}
+
+/* California Coast Theme compatibility */
+body.california-coast-theme {
+	--mc-popup-shadow: 0 8px 32px rgba(var(--shadow-color, 0, 0, 0), 0.2);
+}
+
+/* Catppuccin Theme compatibility */
+body[class*="catppuccin"] {
+	--mc-search-highlight-bg: var(--ctp-yellow, var(--text-highlight-bg));
+	--mc-search-match-bg: rgba(var(--ctp-blue-rgb, var(--color-accent-rgb)), 0.2);
+}
+
+/* Nord Theme compatibility */  
+body.nord-theme {
+	--mc-popup-bg: var(--nord0, var(--background-primary));
+	--mc-pane-accent: var(--nord10, var(--interactive-accent));
+}
+
+/* Obsidian Default Theme variations */
+body.theme-obsidian {
+	--mc-popup-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* ITS Theme compatibility */
+body.ITS-theme {
+	--mc-file-item-bg-active: var(--accent-2, var(--nav-item-background-active));
+}

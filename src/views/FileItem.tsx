@@ -76,10 +76,12 @@ export const FileItem: React.FC<FileItemProps> = ({
 		return '';
 	};
 
+	// Use semantic classes following Obsidian's navigation patterns
 	const className = [
 		'file-item',
-		isSelected ? 'selected' : '',
-		isHighlighted ? 'highlighted' : '',
+		'nav-file', // Use nav-file class for consistency with Obsidian
+		isSelected ? 'is-active' : '', // Cursor position (only show on active pane)
+		isHighlighted ? 'is-selected' : '', // Multi-selection state
 		file instanceof TFolder ? 'folder' : 'file',
 	]
 		.filter(Boolean)

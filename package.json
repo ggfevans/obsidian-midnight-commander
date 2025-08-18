@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-midnight-commander",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"description": "Dual-pane file manager for Obsidian inspired by Midnight Commander",
 	"main": "main.js",
 	"scripts": {
@@ -37,6 +37,8 @@
 		"typescript": "4.7.4"
 	},
 	"dependencies": {
+		"@tanstack/react-virtual": "^3.13.12",
+		"fuse.js": "^7.1.0",
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
 		"recoil": "^0.7.7"
