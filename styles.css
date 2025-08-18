@@ -1,22 +1,24 @@
-/* Midnight Commander Plugin Styles */
+/* Midnight Commander Plugin Styles - Native Obsidian Integration */
 
 .midnight-commander-view {
   height: 100%;
   display: flex;
   flex-direction: column;
   background-color: var(--background-primary);
+  font-family: var(--font-interface);
 }
 
-/* Individual pane headers (now within each pane) */
+/* Individual pane headers - match native nav-header styling */
 .file-pane .pane-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 32px;
-  padding: 0 12px;
-  background-color: var(--background-secondary);
-  border-bottom: 1px solid var(--background-modifier-border);
+  height: var(--nav-item-size, 32px);
+  padding: 0 var(--nav-item-padding-x, 16px);
+  background-color: var(--background-primary);
+  border-bottom: var(--nav-header-border-width, 1px) solid var(--background-modifier-border);
   flex-shrink: 0;
+  font-size: var(--nav-item-size, 13px);
 }
 
 .file-pane.active .pane-header {
@@ -29,27 +31,30 @@
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
+/* Match native nav-folder-title styling */
 .pane-title {
-  font-size: 12px;
-  color: var(--text-muted);
-  font-weight: 500;
+  font-size: var(--nav-item-size, 13px);
+  color: var(--nav-folder-title-color, var(--text-muted));
+  font-weight: var(--nav-folder-title-weight, 500);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   min-width: 0;
   flex: 1;
+  line-height: var(--line-height-tight);
 }
 
 .file-pane.active .pane-title {
-  color: var(--text-normal);
-  font-weight: 600;
+  color: var(--nav-folder-title-color, var(--text-normal));
+  font-weight: var(--nav-folder-title-weight-active, 600);
 }
 
+/* File count styling to match native */
 .pane-file-count {
-  font-size: 11px;
+  font-size: var(--font-ui-smaller);
   color: var(--text-faint);
   white-space: nowrap;
   flex-shrink: 0;
@@ -85,14 +90,15 @@
   line-height: 1;
 }
 
-/* Main dual panes container - now with direct resize handle */
+/* Main dual panes container - integrate seamlessly like native explorer */
 .midnight-commander-dual-pane {
   height: 100%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: 4px;
+  /* Remove border - should look like native file explorer */
+  border: none;
+  border-radius: 0;
 }
 
 /* Individual file panes */
@@ -139,87 +145,122 @@
   padding: 4px 0;
 }
 
-/* Individual file items - using Obsidian navigation patterns */
+/* File items - exact native styling like .nav-file-title */
 .file-item {
   display: flex;
   align-items: center;
-  padding: 6px 12px;
+  padding: 1px 2px 1px 8px;
   cursor: pointer;
-  border-radius: 3px;
-  margin: 1px 4px;
-  transition: background-color 0.1s ease;
-  min-height: 32px;
+  border-radius: 6px;
+  margin: 1px 8px;
+  transition: color 0.1s ease, background-color 0.1s ease;
+  min-height: 22px;
+  font-size: 13px;
+  color: var(--text-normal);
+  line-height: 1.3;
+  font-weight: 400;
 }
 
-/* Hover state - only visible on active panes */
-.file-pane.active .file-item:hover {
-  background-color: var(--nav-item-background-hover, var(--background-modifier-hover));
+/* Default inactive pane styling */
+.file-pane.inactive .file-item {
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+/* Hover state - match native nav-file-title:hover */
+.file-item:hover {
+  background-color: var(--nav-item-background-hover);
   color: var(--nav-item-color-hover, var(--text-normal));
 }
 
-/* Cursor selection - primary navigation state (blue highlight) */
-.file-pane.active .file-item.is-active {
-  background-color: var(--nav-item-background-active, var(--interactive-accent));
-  color: var(--nav-item-color-active, var(--text-on-accent));
-  font-weight: var(--nav-item-weight-active, 500);
+/* Only show hover on active panes for better UX */
+.file-pane.inactive .file-item:hover {
+  background-color: var(--nav-item-background-hover);
+  opacity: 1;
 }
 
-.file-pane.active .file-item.is-active:hover {
-  background-color: var(--interactive-accent-hover);
+/* Active/selected state - match native nav-file-title.is-active */
+.file-item.is-active {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+  font-weight: var(--nav-item-weight-active, var(--nav-file-title-weight-active, 500));
 }
 
-/* Multi-selection state (green highlight) - can appear on any pane */
+.file-item.is-active:hover {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+}
+
+/* Multi-selection state */
 .file-item.is-selected {
-  background-color: var(--nav-item-background-selected, var(--background-modifier-success));
+  background-color: var(--nav-item-background-selected, rgba(var(--color-accent), 0.1));
   color: var(--nav-item-color-selected, var(--text-normal));
 }
 
-/* When both selected and active (cursor on a multi-selected item) */
-.file-pane.active .file-item.is-active.is-selected {
-  background-color: var(--nav-item-background-active, var(--interactive-accent));
-  color: var(--nav-item-color-active, var(--text-on-accent));
+/* Combined active and selected */
+.file-item.is-active.is-selected {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
 }
 
-/* File item icon */
+/* File item icon - match native icon styling */
 .file-item-icon {
-  width: 16px;
-  height: 16px;
-  margin-right: 10px;
+  width: var(--nav-item-icon-size, 16px);
+  height: var(--nav-item-icon-size, 16px);
+  margin-right: var(--nav-item-icon-margin, 8px);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--nav-item-icon-color, var(--icon-color));
 }
 
 .file-item-icon svg {
-  width: 14px;
-  height: 14px;
+  width: var(--icon-size, 16px);
+  height: var(--icon-size, 16px);
   color: currentColor;
+}
+
+/* Folder icons - match native folder color */
+.file-item.folder {
+  color: var(--text-accent);
+}
+
+.file-item.folder .file-item-icon {
+  color: var(--text-accent);
 }
 
 .file-item.folder .file-item-icon svg {
   color: var(--text-accent);
 }
 
+.file-item.folder .file-item-name {
+  color: var(--text-accent);
+  font-weight: 500;
+}
+
 /* File item content */
 .file-item-content {
   flex: 1;
-  min-width: 0; /* Allow text to shrink */
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
 
+/* File name - match native nav-file-title text styling */
 .file-item-name {
-  font-size: 13px;
-  font-weight: 400;
+  font-size: inherit;
+  font-weight: inherit;
+  color: inherit;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: inherit;
 }
 
+/* File size metadata */
 .file-item-size {
-  font-size: 11px;
+  font-size: var(--font-ui-smaller);
   color: var(--text-faint);
   margin-top: 1px;
   line-height: 1;
@@ -389,7 +430,8 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0; /* Prevent unwanted shrinking */
-  border: 1px solid var(--background-modifier-border-hover);
+  /* Remove borders to integrate seamlessly like native file explorer */
+  border: none;
 }
 
 .pane-container.pane-top {
@@ -422,13 +464,13 @@
 
 .breadcrumb-segment {
   display: inline-block;
-  padding: 1px 3px;
+  padding: 1px 2px;
   margin: 0;
   border: none;
   background: transparent !important;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 500;
+  color: var(--nav-folder-title-color, var(--text-muted));
+  font-size: var(--font-ui-small);
+  font-weight: var(--nav-folder-title-weight, 500);
   cursor: pointer;
   border-radius: 2px;
   transition: none;
@@ -436,8 +478,8 @@
   max-width: 100px;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.1;
-  font-family: inherit;
+  line-height: var(--line-height-tight);
+  font-family: var(--font-interface);
   outline: none !important;
   text-decoration: none;
   -webkit-appearance: none;
@@ -449,21 +491,21 @@
 
 /* Only show background on actual hover, not focus */
 .breadcrumb-segment:hover:not(:focus) {
-  background-color: var(--nav-item-background-hover, var(--background-modifier-hover)) !important;
+  background-color: var(--nav-item-background-hover) !important;
   color: var(--nav-item-color-hover, var(--text-normal));
-  transition: background-color 0.1s ease, color 0.1s ease;
+  transition: background-color var(--anim-duration-fast) ease, color var(--anim-duration-fast) ease;
 }
 
 /* Allow hover even when focused */
 .breadcrumb-segment:focus:hover {
-  background-color: var(--nav-item-background-hover, var(--background-modifier-hover)) !important;
+  background-color: var(--nav-item-background-hover) !important;
   color: var(--nav-item-color-hover, var(--text-normal));
-  transition: background-color 0.1s ease, color 0.1s ease;
+  transition: background-color var(--anim-duration-fast) ease, color var(--anim-duration-fast) ease;
 }
 
 .breadcrumb-segment:active {
-  background-color: var(--nav-item-background-active, var(--interactive-accent)) !important;
-  color: var(--nav-item-color-active, var(--text-on-accent));
+  background-color: var(--nav-item-background-active) !important;
+  color: var(--nav-item-color-active);
   transform: translateY(1px);
   transition: none;
 }
@@ -471,20 +513,20 @@
 /* Force transparent background when focused but not hovered */
 .breadcrumb-segment:focus:not(:hover):not(:active) {
   background: transparent !important;
-  color: var(--text-muted);
+  color: var(--nav-folder-title-color, var(--text-muted));
   transition: none;
 }
 
 .breadcrumb-segment.current {
-  color: var(--text-normal);
-  font-weight: 600;
+  color: var(--nav-folder-title-color, var(--text-normal));
+  font-weight: var(--nav-folder-title-weight-active, 600);
   cursor: default;
   background: transparent;
 }
 
 .breadcrumb-segment.current:hover {
   background-color: transparent;
-  color: var(--text-normal);
+  color: var(--nav-folder-title-color, var(--text-normal));
 }
 
 .breadcrumb-separator {
@@ -493,20 +535,20 @@
   color: var(--text-faint);
   margin: 0;
   opacity: 0.6;
-  padding: 0 1px;
+  padding: 0 2px;
 }
 
 .breadcrumb-separator svg {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 /* Active pane breadcrumb styling */
 .file-pane.active .breadcrumb-segment {
-  color: var(--text-normal);
+  color: var(--nav-folder-title-color, var(--text-normal));
 }
 
 .file-pane.active .breadcrumb-segment.current {
-  color: var(--text-normal);
-  font-weight: 600;
+  color: var(--nav-folder-title-color, var(--text-normal));
+  font-weight: var(--nav-folder-title-weight-active, 600);
 }
