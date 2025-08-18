@@ -85,20 +85,11 @@
   line-height: 1;
 }
 
-/* Main dual panes container - now absolute positioned for resize handle overlay */
+/* Main dual panes container - now with direct resize handle */
 .midnight-commander-dual-pane {
   height: 100%;
-  position: relative;
   display: flex;
   flex-direction: column;
-}
-
-.midnight-commander-panes-container {
-  flex: 1;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
 }
 
 /* Individual file panes */
@@ -300,18 +291,15 @@
 }
 
 .resize-handle {
-  position: absolute;
-  left: 0;
-  right: 0;
   height: 8px;
   cursor: ns-resize;
-  pointer-events: all; /* Re-enable pointer events for the handle */
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: transparent;
   transition: background-color 0.2s ease;
-  z-index: 11;
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .resize-handle:hover {

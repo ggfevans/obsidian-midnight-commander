@@ -87,41 +87,85 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 
 	return (
 		<div ref={containerRef} className="midnight-commander-dual-pane">
-			<div className="midnight-commander-panes-container">
-				{/* Top pane (left in our context) */}
-				<div 
-					className="pane-container pane-top"
-					style={{ height: topPaneHeight }}
-				>
-					<FilePane
-						paneState={leftPane}
-						onStateChange={handleLeftPaneStateChange}
-						onFileClick={handleLeftFileClick}
-						onFileContextMenu={handleLeftFileContextMenu}
-						onNavigateToFolder={handleLeftNavigateToFolder}
-					/>
-				</div>
-
-				{/* Resize handle */}
-				<ResizeHandle
-					onResize={handleResize}
-					containerHeight={containerHeight}
-					initialTopHeight={topPaneHeight}
+			{/* Top pane (left in our context) */}
+			<div 
+				className="pane-container pane-top"
+				style={{ height: `${topPaneHeight}px` }}
+			>
+				<FilePane
+					paneState={leftPane}
+					onStateChange={handleLeftPaneStateChange}
+					onFileClick={handleLeftFileClick}
+					onFileContextMenu={handleLeftFileContextMenu}
+					onNavigateToFolder={handleLeftNavigateToFolder}
 				/>
+			</div>
 
-				{/* Bottom pane (right in our context) */}
-				<div 
-					className="pane-container pane-bottom"
-					style={{ height: bottomPaneHeight }}
-				>
-					<FilePane
-						paneState={rightPane}
-						onStateChange={handleRightPaneStateChange}
-						onFileClick={handleRightFileClick}
-						onFileContextMenu={handleRightFileContextMenu}
-						onNavigateToFolder={handleRightNavigateToFolder}
-					/>
+			{/* Resize handle */}
+			<div
+				className="resize-handle"
+				onMouseDown={(e) => {
+					e.preventDefault();
+					console.log('Resize started', { containerHeight, topPaneHeight, bottomPaneHeight });
+					const startY = e.clientY;
+					const startTopHeight = topPaneHeight;
+					
+					// Add dragging class
+					const handleElement = e.currentTarget as HTMLElement;
+					handleElement.classList.add('dragging');
+					
+					const handleMouseMove = (e: MouseEvent) => {
+						const deltaY = e.clientY - startY;
+						const newTopHeight = Math.max(100, Math.min(containerHeight - 100, startTopHeight + deltaY));
+						const newBottomHeight = containerHeight - newTopHeight;
+						
+						console.log('Resizing', { deltaY, newTopHeight, newBottomHeight });
+						setTopPaneHeight(newTopHeight);
+						setBottomPaneHeight(newBottomHeight);
+					};
+					
+					const handleMouseUp = () => {
+						console.log('Resize ended');
+						document.removeEventListener('mousemove', handleMouseMove);
+						document.removeEventListener('mouseup', handleMouseUp);
+						document.body.style.cursor = '';
+						handleElement.classList.remove('dragging');
+					};
+					
+					document.addEventListener('mousemove', handleMouseMove);
+					document.addEventListener('mouseup', handleMouseUp);
+					document.body.style.cursor = 'ns-resize';
+				}}
+				onDoubleClick={() => {
+					const resetHeight = containerHeight / 2;
+					setTopPaneHeight(resetHeight);
+					setBottomPaneHeight(resetHeight);
+				}}
+				title="Drag to resize panes (double-click to reset)"
+			>
+				<div className="resize-handle-grip">
+					<div className="resize-handle-line" />
+					<div className="resize-handle-dots">
+						<span></span>
+						<span></span>
+						<span></span>
+					</div>
+					<div className="resize-handle-line" />
 				</div>
+			</div>
+
+			{/* Bottom pane (right in our context) */}
+			<div 
+				className="pane-container pane-bottom"
+				style={{ height: `${bottomPaneHeight}px` }}
+			>
+				<FilePane
+					paneState={rightPane}
+					onStateChange={handleRightPaneStateChange}
+					onFileClick={handleRightFileClick}
+					onFileContextMenu={handleRightFileContextMenu}
+					onNavigateToFolder={handleRightNavigateToFolder}
+				/>
 			</div>
 		</div>
 	);
