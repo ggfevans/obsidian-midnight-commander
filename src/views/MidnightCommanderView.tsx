@@ -433,14 +433,17 @@ export class MidnightCommanderView extends ItemView {
 				item.setTitle('New note')
 					.setIcon('edit')
 					.onClick(async () => {
-						// Create new note in this folder
+						// Create new note in this folder using FileOperations
 						try {
-							const newFile = await this.app.vault.create(
-								`${file.path}/Untitled.md`,
+							const newFile = await this.fileOperations.createNewFile(
+								file,
+								'Untitled.md',
 								''
 							);
-							this.app.workspace.getLeaf().openFile(newFile);
-							this.refreshPane(activePane);
+							if (newFile) {
+								this.app.workspace.getLeaf().openFile(newFile);
+								this.refreshPane(activePane);
+							}
 						} catch (error) {
 							console.error('Failed to create new note:', error);
 						}

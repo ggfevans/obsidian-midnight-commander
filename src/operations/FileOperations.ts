@@ -57,11 +57,12 @@ export class FileOperations {
         if (!confirmed) return;
 
         try {
-            // Use Obsidian's built-in deletion methods for safety
+            // Use FileManager for safer deletion with link updates
             for (const file of files) {
                 if (file instanceof TFile) {
                     await this.app.fileManager.trashFile(file);
                 } else if (file instanceof TFolder) {
+                    // For folders, we still need to use vault.delete as FileManager doesn't handle folders
                     await this.app.vault.delete(file);
                 }
             }
@@ -89,6 +90,8 @@ export class FileOperations {
                 return null;
             }
 
+            // For now, vault.createFolder is still the recommended way to create folders
+            // FileManager doesn't have a createFolder method
             await this.app.vault.createFolder(folderPath);
             new Notice(`Created folder: ${folderName}`);
             return this.app.vault.getAbstractFileByPath(folderPath) as TFolder;
@@ -131,8 +134,9 @@ export class FileOperations {
             const targetPath = this.generateCopyName(file);
             
             if (file instanceof TFile) {
-                const content = await this.app.vault.read(file);
-                await this.app.vault.create(targetPath, content);
+                // Use cachedRead for better performance, fallback to read
+                const content = await this.safeReadFile(file);
+                await this.safeCreateFile(targetPath, content);
             } else if (file instanceof TFolder) {
                 // Create the folder first
                 await this.app.vault.createFolder(targetPath);
@@ -157,8 +161,8 @@ export class FileOperations {
         const targetPath = this.generateUniqueTargetPath(file, targetFolder);
 
         if (file instanceof TFile) {
-            const content = await this.app.vault.read(file);
-            await this.app.vault.create(targetPath, content);
+            const content = await this.safeReadFile(file);
+            await this.safeCreateFile(targetPath, content);
         } else if (file instanceof TFolder) {
             // Create the folder first
             await this.app.vault.createFolder(targetPath);
@@ -255,6 +259,60 @@ export class FileOperations {
             );
             modal.open();
         });
+    }
+
+    /**
+     * Safe file reading with cachedRead fallback
+     */
+    private async safeReadFile(file: TFile): Promise<string> {
+        try {
+            // Try cachedRead first for better performance
+            return await this.app.vault.cachedRead(file);
+        } catch (error) {
+            console.warn('cachedRead failed, falling back to regular read:', error);
+            return await this.app.vault.read(file);
+        }
+    }
+
+    /**
+     * Safe file creation with collision handling
+     */
+    private async safeCreateFile(path: string, content: string): Promise<TFile> {
+        // Check if file already exists and generate unique name if needed
+        let finalPath = path;
+        let counter = 1;
+        
+        while (this.app.vault.getAbstractFileByPath(finalPath)) {
+            const extension = path.includes('.') ? path.substring(path.lastIndexOf('.')) : '';
+            const baseName = extension ? path.replace(extension, '') : path;
+            finalPath = `${baseName} ${counter}${extension}`;
+            counter++;
+        }
+        
+        return await this.app.vault.create(finalPath, content);
+    }
+
+    /**
+     * Create a new file with FileManager awareness
+     */
+    async createNewFile(parentFolder: TFolder, fileName: string, content: string = ''): Promise<TFile | null> {
+        try {
+            const filePath = `${parentFolder.path}/${fileName}`;
+            
+            // Check if file already exists
+            if (this.app.vault.getAbstractFileByPath(filePath)) {
+                new Notice(`File "${fileName}" already exists`);
+                return null;
+            }
+            
+            const newFile = await this.safeCreateFile(filePath, content);
+            new Notice(`Created file: ${fileName}`);
+            return newFile;
+        } catch (error) {
+            console.error('Error creating file:', error);
+            new Notice(`Error creating file: ${error.message}`, 3000);
+            return null;
+        }
     }
 }
 
