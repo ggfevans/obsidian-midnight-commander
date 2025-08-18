@@ -1,5 +1,6 @@
 import { App, TAbstractFile, TFolder, TFile, Notice, Modal } from 'obsidian';
 import { FileCache } from '../utils/FileCache';
+import { BatchOperations, runInBatch } from '../utils/BatchOperations';
 
 export class FileOperations {
     constructor(private app: App, private fileCache?: FileCache) {}
@@ -25,7 +26,7 @@ export class FileOperations {
     }
 
     /**
-     * Move files to target folder
+     * Move files to target folder using batch operations
      */
     async moveFiles(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         if (files.length === 0) {
@@ -33,19 +34,30 @@ export class FileOperations {
             return;
         }
 
+        console.time(`[FileOperations] Move ${files.length} files`);
+        console.log(`[FileOperations] Starting batch move of ${files.length} files to ${targetFolder.path}`);
+
         try {
-            const operations = files.map(file => this.moveFile(file, targetFolder));
-            await Promise.all(operations);
+            // Use batch operations for better performance with metadata cache optimization
+            await runInBatch(this.app, files.map(file => 
+                (batch: BatchOperations) => {
+                    const targetPath = this.generateUniqueTargetPath(file, targetFolder);
+                    batch.addRenameOperation(file, targetPath);
+                }
+            ));
+            
             new Notice(`Moved ${files.length} item(s) to ${targetFolder.path}`);
         } catch (error) {
             console.error('Error moving files:', error);
             new Notice(`Error moving files: ${error.message}`, 5000);
             throw error;
+        } finally {
+            console.timeEnd(`[FileOperations] Move ${files.length} files`);
         }
     }
 
     /**
-     * Delete files with confirmation
+     * Delete files with confirmation using batch operations
      */
     async deleteFiles(files: TAbstractFile[]): Promise<void> {
         if (files.length === 0) {
@@ -57,21 +69,29 @@ export class FileOperations {
         const confirmed = await this.confirmDeletion(files);
         if (!confirmed) return;
 
+        console.time(`[FileOperations] Delete ${files.length} files`);
+        console.log(`[FileOperations] Starting batch deletion of ${files.length} files`);
+
         try {
-            // Use FileManager for safer deletion with link updates
-            for (const file of files) {
-                if (file instanceof TFile) {
-                    await this.app.fileManager.trashFile(file);
-                } else if (file instanceof TFolder) {
-                    // For folders, we still need to use vault.delete as FileManager doesn't handle folders
-                    await this.app.vault.delete(file);
+            // Use batch operations for better performance with metadata cache optimization
+            await runInBatch(this.app, files.map(file => 
+                (batch: BatchOperations) => {
+                    // Note: FileManager.trashFile is safer for TFiles, but we need custom operations for folders
+                    if (file instanceof TFile) {
+                        batch.addCustomOperation(() => this.app.fileManager.trashFile(file));
+                    } else if (file instanceof TFolder) {
+                        batch.addDeleteOperation(file);
+                    }
                 }
-            }
+            ));
+            
             new Notice(`Deleted ${files.length} item(s)`);
         } catch (error) {
             console.error('Error deleting files:', error);
             new Notice(`Error deleting files: ${error.message}`, 5000);
             throw error;
+        } finally {
+            console.timeEnd(`[FileOperations] Delete ${files.length} files`);
         }
     }
 
