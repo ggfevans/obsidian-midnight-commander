@@ -60,13 +60,15 @@ Quick starting guide for new plugin devs:
 
 ## Build Commands
 
-- `npm run dev` - Development build with watch mode and sourcemaps
-- `npm run build` - Production build (minified, no sourcemaps)
+- `npm run dev` - Development build with **watch mode** and sourcemaps (stays running)
+- `npm run build-dev` - Development build that **completes and exits** with sourcemaps
+- `npm run build` - Production build (minified, no sourcemaps, completes and exits)
 
-Both commands will:
+All commands will:
 - Create the `./build-output/` directory
 - Copy `manifest.json` and `styles.css` 
 - Bundle TypeScript/React code to `main.js`
+- Show helpful console output with build status
 
 ## Manually installing the plugin
 

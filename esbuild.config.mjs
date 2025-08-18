@@ -11,7 +11,10 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const prod = (process.argv[2] === "production");
+const mode = process.argv[2] || "watch";
+const prod = (mode === "production");
+const dev = (mode === "development");
+const watch = (mode !== "production" && mode !== "development");
 
 // Function to copy required files to build output
 function copyRequiredFiles() {
@@ -70,7 +73,12 @@ if (prod) {
 	await context.rebuild();
 	console.log("🚀 Production build complete in ./build-output/");
 	process.exit(0);
-} else {
+} else if (dev) {
+	await context.rebuild();
+	console.log("🛠️  Development build complete in ./build-output/");
+	console.log("📁 Output directory: ./build-output/");
+	process.exit(0);
+} else if (watch) {
 	console.log("👀 Development build complete, watching for changes...");
 	console.log("📁 Output directory: ./build-output/");
 	await context.watch();
