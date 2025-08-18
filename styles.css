@@ -85,12 +85,20 @@
   line-height: 1;
 }
 
-/* Main dual panes container */
-.midnight-commander-panes {
-  flex: 1;
+/* Main dual panes container - now absolute positioned for resize handle overlay */
+.midnight-commander-dual-pane {
+  height: 100%;
+  position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 0; /* Allow flex children to shrink */
+}
+
+.midnight-commander-panes-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 /* Individual file panes */
@@ -276,4 +284,120 @@
 .file-list-virtual * {
   /* Enable hardware acceleration for smooth scrolling */
   transform: translateZ(0);
+}
+
+/* ============================= */
+/* RESIZE HANDLE STYLES */
+/* ============================= */
+
+.resize-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  pointer-events: none; /* Allow clicks to pass through to panes */
+  z-index: 10;
+}
+
+.resize-handle {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  pointer-events: all; /* Re-enable pointer events for the handle */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  transition: background-color 0.2s ease;
+  z-index: 11;
+}
+
+.resize-handle:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.resize-handle.dragging {
+  background-color: var(--interactive-accent);
+  cursor: ns-resize !important;
+}
+
+.resize-handle-grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 3px;
+  background-color: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  transition: all 0.2s ease;
+}
+
+.resize-handle:hover .resize-handle-grip {
+  background-color: var(--background-primary);
+  border-color: var(--text-faint);
+}
+
+.resize-handle.dragging .resize-handle-grip {
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.resize-handle-line {
+  width: 12px;
+  height: 1px;
+  background-color: var(--text-faint);
+  opacity: 0.5;
+}
+
+.resize-handle.dragging .resize-handle-line {
+  background-color: var(--text-on-accent);
+  opacity: 1;
+}
+
+.resize-handle-dots {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+}
+
+.resize-handle-dots span {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background-color: var(--text-faint);
+  opacity: 0.7;
+}
+
+.resize-handle.dragging .resize-handle-dots span {
+  background-color: var(--text-on-accent);
+  opacity: 1;
+}
+
+/* ============================= */
+/* PANE CONTAINER STYLES */
+/* ============================= */
+
+.pane-container {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.pane-container.pane-top {
+  /* Top pane styling - no special styles needed, height set via inline styles */
+}
+
+.pane-container.pane-bottom {
+  /* Bottom pane styling - no special styles needed, height set via inline styles */
+}
+
+/* Ensure file panes within containers take full height */
+.pane-container .file-pane {
+  height: 100%;
+  border-bottom: none; /* Remove border since we're not using flex layout */
 }
