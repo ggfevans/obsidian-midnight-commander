@@ -42,7 +42,7 @@ export class FolderMenu extends PopupMenu {
 
     constructor(options: FolderMenuOptions) {
         super({
-            className: `folder-menu ${options.className || ''}`,
+            className: `folder-menu${options.className ? ' ' + options.className : ''}`,
             onClose: options.onClose
         });
         

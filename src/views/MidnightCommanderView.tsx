@@ -1,4 +1,4 @@
-import { ItemView, WorkspaceLeaf, TFolder, TAbstractFile, TFile } from 'obsidian';
+import { ItemView, WorkspaceLeaf, TFolder, TAbstractFile, TFile, Menu } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
 import { RecoilRoot } from 'recoil';
 import React from 'react';
@@ -332,77 +332,21 @@ export class MidnightCommanderView extends ItemView {
 	}
 
 	private handleFileContextMenu(file: TAbstractFile, paneId: 'left' | 'right', position: any) {
-		// Use the new FolderMenu to create a context menu
+		// Use Obsidian's native Menu class - same as default file explorer
 		const activePane = this.getActivePane();
-		const contextMenu = new FolderMenu({
-			app: this.app,
-			folder: activePane.currentFolder,
-			showHiddenFiles: this.settings.showHiddenFiles,
-			onFileSelect: (selectedFile) => {
-				if (selectedFile instanceof TFile) {
-					// Open the file
-					this.app.workspace.getLeaf().openFile(selectedFile);
-				}
-			},
-			onFolderNavigate: (folder) => {
-				// Navigate to the folder in active pane
-				this.navigateToFolder(activePane, folder);
-			},
-			enableAutoPreview: false // Disable previews for context menu
-		});
+		const menu = new Menu();
 
-		// Customize menu for the specific file
-		contextMenu.addItem({
-			title: `--- ${file.name} ---`,
-			disabled: true
-		});
-
+		// Let Obsidian populate the menu with standard file/folder operations
 		if (file instanceof TFile) {
-			contextMenu.addItem({
-				title: 'Open in new tab',
-				icon: 'external-link',
-				callback: () => {
-					this.app.workspace.getLeaf(true).openFile(file);
-				}
-			});
+			// Trigger standard file context menu
+			this.app.workspace.trigger('file-menu', menu, file, 'file-explorer');
 		} else if (file instanceof TFolder) {
-			contextMenu.addItem({
-				title: 'Open folder',
-				icon: 'folder-open',
-				callback: () => {
-					this.navigateToFolder(activePane, file);
-				}
-			});
+			// Trigger standard folder context menu
+			this.app.workspace.trigger('file-menu', menu, file, 'file-explorer');
 		}
 
-		contextMenu.addItem({
-			title: 'Rename...',
-			icon: 'pencil',
-			callback: () => {
-				// TODO: Implement rename dialog
-				console.log('Rename:', file.name);
-			}
-		});
-
-		contextMenu.addItem({
-			title: 'Delete',
-			icon: 'trash',
-			callback: async () => {
-				await this.fileOperations.deleteFiles([file]);
-				this.refreshPane(activePane);
-			}
-		});
-
-		contextMenu.addItem({
-			title: 'Copy path',
-			icon: 'copy',
-			callback: () => {
-				navigator.clipboard.writeText(file.path);
-			}
-		});
-
-		// Show context menu at mouse position
-		contextMenu.showAtPosition(position);
+		// Show the menu at the mouse position
+		menu.showAtPosition(position);
 	}
 
 	private handleNavigateToFolder(folder: TFolder, paneId: 'left' | 'right') {
