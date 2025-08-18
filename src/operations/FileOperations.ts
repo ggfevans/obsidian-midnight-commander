@@ -1,7 +1,8 @@
 import { App, TAbstractFile, TFolder, TFile, Notice, Modal } from 'obsidian';
+import { FileCache } from '../utils/FileCache';
 
 export class FileOperations {
-    constructor(private app: App) {}
+    constructor(private app: App, private fileCache?: FileCache) {}
 
     /**
      * Copy files to target folder
@@ -262,15 +263,37 @@ export class FileOperations {
     }
 
     /**
-     * Safe file reading with cachedRead fallback
+     * Safe file reading with cache awareness and cachedRead fallback
      */
     private async safeReadFile(file: TFile): Promise<string> {
+        // Check file cache first if available
+        if (this.fileCache) {
+            const cachedContent = this.fileCache.getCachedContent(file);
+            if (cachedContent !== undefined) {
+                return cachedContent;
+            }
+        }
+
         try {
             // Try cachedRead first for better performance
-            return await this.app.vault.cachedRead(file);
+            const content = await this.app.vault.cachedRead(file);
+            
+            // Cache the content for future use
+            if (this.fileCache) {
+                this.fileCache.cacheContent(file, content);
+            }
+            
+            return content;
         } catch (error) {
             console.warn('cachedRead failed, falling back to regular read:', error);
-            return await this.app.vault.read(file);
+            const content = await this.app.vault.read(file);
+            
+            // Cache the content from regular read too
+            if (this.fileCache) {
+                this.fileCache.cacheContent(file, content);
+            }
+            
+            return content;
         }
     }
 

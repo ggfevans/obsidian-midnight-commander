@@ -51,8 +51,8 @@ export class MidnightCommanderView extends ItemView {
 			isActive: this.settings.activePane === 'right',
 		};
 		
-		// Initialize file operations
-		this.fileOperations = new FileOperations(this.app);
+		// Initialize file operations with cache support
+		this.fileOperations = new FileOperations(this.app, plugin.fileCache);
 		this.navigationService = new NavigationService(this.app);
 	}
 
@@ -383,6 +383,12 @@ export class MidnightCommanderView extends ItemView {
 		pane.files = this.getSortedFiles(folder);
 		pane.selectedIndex = 0;
 		pane.selectedFiles.clear();
+		
+		// Prefetch metadata for files in this folder for better performance
+		if (this.plugin.fileCache) {
+			this.plugin.fileCache.prefetchFolder(folder.path);
+		}
+		
 		this.renderDualPane();
 	}
 

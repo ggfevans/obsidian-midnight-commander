@@ -12,6 +12,7 @@ import { MidnightCommanderSettings } from './src/types/interfaces';
 import { NavigationService } from './src/services/NavigationService';
 import { MidnightCommanderSettingTab } from './src/settings/SettingsTab';
 import { EventManager } from './src/utils/EventManager';
+import { FileCache } from './src/utils/FileCache';
 
 const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	showHiddenFiles: false,
@@ -29,12 +30,17 @@ export default class MidnightCommanderPlugin extends Plugin {
 	settings: MidnightCommanderSettings;
 	navigationService: NavigationService;
 	eventManager: EventManager;
+	fileCache: FileCache;
 
 	async onload() {
 		console.log('Loading Obsidian Midnight Commander plugin');
 		
 		// Initialize event manager for centralized event handling
 		this.eventManager = new EventManager(this.app, this);
+		
+		// Initialize file cache for performance optimization
+		this.fileCache = new FileCache(this.app, 500);
+		this.addChild(this.fileCache);
 		
 		await this.loadSettings();
 
