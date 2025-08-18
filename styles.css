@@ -1,5 +1,8 @@
 /* Midnight Commander Plugin Styles - Native Obsidian Integration */
 
+/* Import PopupMenu styles */
+@import url('./src/styles/popup-menu.css');
+
 .midnight-commander-view {
   height: 100%;
   display: flex;

@@ -6,6 +6,8 @@ import MidnightCommanderPlugin from '../../main';
 import { DualPaneManager } from './DualPaneManager';
 import { PaneState, MidnightCommanderSettings } from '../types/interfaces';
 import { FileOperations } from '../operations/FileOperations';
+import { FolderMenu } from '../core/FolderMenu';
+import { PopupMenu } from '../core/PopupMenu';
 
 export const VIEW_TYPE_MIDNIGHT_COMMANDER = 'midnight-commander-view';
 
@@ -144,10 +146,24 @@ export class MidnightCommanderView extends ItemView {
 				return false;
 			});
 			
-			// Context menu shortcut
+        		// Context menu shortcut
 			this.scope.register([], "\\", (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showContextMenuForSelected();
+				return false;
+			});
+
+			// Quick Explorer style folder navigation (F9)
+			this.scope.register([], "F9", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showFolderMenu();
+				return false;
+			});
+
+			// Command palette (Ctrl+P)
+			this.scope.register(["Mod"], "p", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showCommandPalette();
 				return false;
 			});
 		}
@@ -499,5 +515,118 @@ export class MidnightCommanderView extends ItemView {
 			pane.selectedIndex = fileIndex;
 			this.renderDualPane();
 		}
+	}
+
+	// ====================
+	// POPUP MENU INTEGRATION
+	// ====================
+
+	/**
+	 * Show folder menu for active pane (F9 shortcut)
+	 */
+	private showFolderMenu() {
+		const activePane = this.getActivePane();
+		const folderMenu = new FolderMenu({
+			app: this.app,
+			folder: activePane.currentFolder,
+			showHiddenFiles: this.settings.showHiddenFiles,
+			onFileSelect: (file) => {
+				if (file instanceof TFile) {
+					// Open the file
+					this.app.workspace.getLeaf().openFile(file);
+				}
+			},
+			onFolderNavigate: (folder) => {
+				// Navigate to the folder in active pane
+				this.navigateToFolder(activePane, folder);
+			}
+		});
+
+		// Position menu next to the active pane
+		const paneElement = this.contentEl.querySelector(
+			activePane.id === 'left' ? '.file-pane:first-child' : '.file-pane:last-child'
+		) as HTMLElement;
+
+		if (paneElement) {
+			folderMenu.cascade({
+				target: paneElement,
+				event: undefined,
+				onClose: () => folderMenu.hide()
+			});
+		}
+	}
+
+	/**
+	 * Show command palette (Ctrl+P shortcut)
+	 */
+	private showCommandPalette() {
+		const commandMenu = new PopupMenu({
+			className: 'command-palette',
+			items: [
+				{
+					title: 'Toggle hidden files',
+					icon: 'eye',
+					callback: () => {
+						this.settings.showHiddenFiles = !this.settings.showHiddenFiles;
+						this.plugin.saveSettings();
+						// Refresh both panes
+						this.refreshPane(this.leftPane);
+						this.refreshPane(this.rightPane);
+					}
+				},
+				{
+					title: 'Switch to left pane',
+					icon: 'arrow-left',
+					callback: () => {
+						this.leftPane.isActive = true;
+						this.rightPane.isActive = false;
+						this.settings.activePane = 'left';
+						this.plugin.saveSettings();
+						this.renderDualPane();
+					}
+				},
+				{
+					title: 'Switch to right pane',
+					icon: 'arrow-right',
+					callback: () => {
+						this.leftPane.isActive = false;
+						this.rightPane.isActive = true;
+						this.settings.activePane = 'right';
+						this.plugin.saveSettings();
+						this.renderDualPane();
+					}
+				},
+				{
+					title: 'Refresh current pane',
+					icon: 'refresh-cw',
+					callback: () => {
+						this.refreshPane(this.getActivePane());
+					}
+				},
+				{
+					title: 'Go to vault root',
+					icon: 'home',
+					callback: () => {
+						const activePane = this.getActivePane();
+						const rootFolder = this.app.vault.getRoot();
+						this.navigateToFolder(activePane, rootFolder);
+					}
+				},
+				{
+					title: 'Create new folder...',
+					icon: 'folder-plus',
+					callback: () => {
+						this.createNewFolder();
+					}
+				}
+			]
+		});
+
+		// Position command palette in center of view
+		const rect = this.contentEl.getBoundingClientRect();
+		commandMenu.showAtPosition({
+			x: rect.left + rect.width / 2 - 200, // Center horizontally
+			y: rect.top + 100 // A bit down from top
+		});
 	}
 }
