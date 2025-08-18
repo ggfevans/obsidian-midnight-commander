@@ -9,6 +9,7 @@ import { FileOperations } from '../operations/FileOperations';
 import { FolderMenu } from '../core/FolderMenu';
 import { PopupMenu } from '../core/PopupMenu';
 import { NavigationService } from '../services/NavigationService';
+import { EventManager } from '../utils/EventManager';
 
 export const VIEW_TYPE_MIDNIGHT_COMMANDER = 'midnight-commander-view';
 
@@ -20,11 +21,15 @@ export class MidnightCommanderView extends ItemView {
 	settings: MidnightCommanderSettings;
 	fileOperations: FileOperations;
 	navigationService: NavigationService;
+	eventManager: EventManager;
 
 	constructor(leaf: WorkspaceLeaf, plugin: MidnightCommanderPlugin) {
 		super(leaf);
 		this.plugin = plugin;
 		this.settings = plugin.settings;
+		
+		// Initialize event manager for this view
+		this.eventManager = new EventManager(this.app, this);
 		
 		// Initialize pane states
 		const rootFolder = this.app.vault.getRoot();
@@ -67,8 +72,13 @@ export class MidnightCommanderView extends ItemView {
 		this.destroy();
 		this.renderDualPane();
 		
+		// Register view-specific events for file/workspace changes
+		this.setupWorkspaceEvents();
+		
 		// Register basic keyboard handlers - check if scope exists
 		if (this.scope) {
+			// Register the scope with our event manager for cleanup
+			this.eventManager.registerScope(this.scope);
 			this.scope.register([], "Tab", (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.switchActivePane();
@@ -216,6 +226,11 @@ export class MidnightCommanderView extends ItemView {
 	}
 
 	async onClose() {
+		// Cleanup event manager first
+		if (this.eventManager) {
+			this.eventManager.cleanup();
+		}
+		
 		this.destroy();
 	}
 
@@ -223,6 +238,78 @@ export class MidnightCommanderView extends ItemView {
 		if (this.root) {
 			this.root.unmount();
 		}
+		
+		// Call parent cleanup to ensure proper cleanup
+		if (this.eventManager) {
+			this.eventManager.cleanup();
+		}
+	}
+
+	/**
+	 * Setup workspace events for file/folder changes
+	 */
+	private setupWorkspaceEvents() {
+		// Listen for file creation, deletion, and rename events
+		this.eventManager.registerAppEvent('vault', 'create', (file: TAbstractFile) => {
+			this.onVaultFileChange('create', file);
+		});
+
+		this.eventManager.registerAppEvent('vault', 'delete', (file: TAbstractFile) => {
+			this.onVaultFileChange('delete', file);
+		});
+
+		this.eventManager.registerAppEvent('vault', 'rename', (file: TAbstractFile, oldPath: string) => {
+			this.onVaultFileChange('rename', file, oldPath);
+		});
+
+		// Listen for workspace layout changes
+		this.eventManager.registerAppEvent('workspace', 'layout-change', () => {
+			// Re-render to handle any layout changes
+			this.renderDualPane();
+		});
+
+		// Listen for active leaf changes to update context
+		this.eventManager.registerAppEvent('workspace', 'active-leaf-change', (leaf: WorkspaceLeaf) => {
+			// Could be used to synchronize with active file in the future
+			console.debug('Active leaf changed:', leaf);
+		});
+	}
+
+	/**
+	 * Handle vault file changes by refreshing affected panes
+	 */
+	private onVaultFileChange(eventType: 'create' | 'delete' | 'rename', file: TAbstractFile, oldPath?: string) {
+		// Check if the file change affects either pane
+		const leftNeedsRefresh = this.fileChangeAffectsPane(this.leftPane, file, oldPath);
+		const rightNeedsRefresh = this.fileChangeAffectsPane(this.rightPane, file, oldPath);
+
+		if (leftNeedsRefresh) {
+			this.refreshPane(this.leftPane);
+		}
+
+		if (rightNeedsRefresh) {
+			this.refreshPane(this.rightPane);
+		}
+	}
+
+	/**
+	 * Check if a file change affects a specific pane
+	 */
+	private fileChangeAffectsPane(pane: PaneState, file: TAbstractFile, oldPath?: string): boolean {
+		// Check if the file is in the current folder of the pane
+		if (file.parent === pane.currentFolder) {
+			return true;
+		}
+
+		// For rename events, also check if the old path was in this folder
+		if (oldPath) {
+			const oldParentPath = oldPath.substring(0, oldPath.lastIndexOf('/'));
+			if (oldParentPath === pane.currentFolder.path) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// Helper methods

@@ -11,6 +11,7 @@ import { MidnightCommanderView, VIEW_TYPE_MIDNIGHT_COMMANDER } from './src/views
 import { MidnightCommanderSettings } from './src/types/interfaces';
 import { NavigationService } from './src/services/NavigationService';
 import { MidnightCommanderSettingTab } from './src/settings/SettingsTab';
+import { EventManager } from './src/utils/EventManager';
 
 const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	showHiddenFiles: false,
@@ -27,9 +28,13 @@ const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 export default class MidnightCommanderPlugin extends Plugin {
 	settings: MidnightCommanderSettings;
 	navigationService: NavigationService;
+	eventManager: EventManager;
 
 	async onload() {
 		console.log('Loading Obsidian Midnight Commander plugin');
+		
+		// Initialize event manager for centralized event handling
+		this.eventManager = new EventManager(this.app, this);
 		
 		await this.loadSettings();
 
@@ -84,18 +89,28 @@ export default class MidnightCommanderPlugin extends Plugin {
 			callback: () => this.navigateToFile(1, false),
 		});
 
-		// Open view on startup if enabled
-		this.app.workspace.onLayoutReady(() => {
-			if (this.settings.openViewOnStart) {
-				this.activateView();
-			}
-		});
+	// Open view on startup if enabled
+	this.eventManager.registerAppEvent('workspace', 'layout-ready', () => {
+		if (this.settings.openViewOnStart) {
+			this.activateView();
+		}
+	});
 	}
 
-	onunload() {
-		console.log('Unloading Obsidian Midnight Commander plugin');
-		this.app.workspace.detachLeavesOfType(VIEW_TYPE_MIDNIGHT_COMMANDER);
+onunload() {
+	console.log('Unloading Obsidian Midnight Commander plugin');
+	
+	// Clean up all registered events
+	if (this.eventManager) {
+		this.eventManager.cleanup();
 	}
+	
+	// Detach any view leaves
+	this.app.workspace.detachLeavesOfType(VIEW_TYPE_MIDNIGHT_COMMANDER);
+	
+	// Call parent cleanup
+	super.onunload();
+}
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
