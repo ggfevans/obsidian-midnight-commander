@@ -1,6 +1,7 @@
 /* Midnight Commander Plugin Styles - Native Obsidian Integration */
 
-/* Import PopupMenu styles */
+/* Import PopupMenu and theme compatibility styles */
+@import url('./src/styles/theme-compatibility.css');
 @import url('./src/styles/popup-menu.css');
 
 .midnight-commander-view {

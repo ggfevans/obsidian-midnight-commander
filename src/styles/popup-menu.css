@@ -1,15 +1,15 @@
 /* PopupMenu and FolderMenu Styles - Adapted from Quick Explorer */
 
-/* Base popup menu styling */
+/* Base popup menu styling - enhanced theme compatibility */
 .popup-menu {
     min-width: 200px;
     max-width: 400px;
     max-height: 400px;
     overflow-y: auto;
-    background: var(--background-primary);
-    border: 1px solid var(--background-modifier-border);
+    background: var(--mc-popup-bg);
+    border: 1px solid var(--mc-popup-border);
     border-radius: var(--radius-m, 6px);
-    box-shadow: var(--shadow-s);
+    box-shadow: var(--mc-popup-shadow);
     padding: 4px;
     z-index: var(--layer-menu, 1000);
     position: fixed;
@@ -30,19 +30,20 @@
 }
 
 .popup-menu .menu-item:not(.is-disabled):not(.is-label):hover {
-    background-color: var(--background-modifier-hover);
-    color: var(--text-normal);
+    background-color: var(--mc-menu-item-bg-hover);
+    color: var(--mc-menu-item-color-hover);
 }
 
 .popup-menu .menu-item.selected {
-    background-color: var(--interactive-accent-hover);
-    color: var(--text-on-accent);
+    background-color: var(--mc-menu-item-bg-active);
+    color: var(--mc-menu-item-color-active);
 }
 
 .popup-menu .menu-item.is-disabled {
     opacity: 0.5;
     cursor: default;
     pointer-events: none;
+    color: var(--mc-menu-item-color-muted);
 }
 
 /* Menu item icons */
