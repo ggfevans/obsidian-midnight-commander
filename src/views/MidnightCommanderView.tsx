@@ -202,6 +202,33 @@ export class MidnightCommanderView extends ItemView {
 				return false;
 			});
 
+			// Quick search (Ctrl+F)
+			this.scope.register(["Mod"], "f", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.toggleQuickSearch();
+				return false;
+			});
+
+			// Alternative quick search shortcut (/)
+			this.scope.register([], "/", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.toggleQuickSearch();
+				return false;
+			});
+
+			// File preview shortcut (Space)
+			this.scope.register(["Shift"], " ", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showFilePreview();
+				return false;
+			});
+
+			// Alternative file preview shortcut (F3)
+			this.scope.register([], "F3", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showFilePreview();
+				return false;
+			});
 			// File navigation commands (Ctrl+Shift combinations)
 			this.scope.register(["Mod", "Shift"], "ArrowUp", (evt: KeyboardEvent) => {
 				evt.preventDefault();
@@ -224,6 +251,141 @@ export class MidnightCommanderView extends ItemView {
 			this.scope.register(["Mod"], "ArrowDown", (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateToNextFile();
+				return false;
+			});
+			
+			// Enhanced keyboard shortcuts for better navigation
+			
+			// Bookmark management (Ctrl+B to bookmark, Ctrl+Shift+B to view bookmarks)
+			this.scope.register(["Mod"], "b", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.bookmarkCurrentFolder();
+				return false;
+			});
+			
+			this.scope.register(["Mod", "Shift"], "b", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showBookmarkMenu();
+				return false;
+			});
+			
+			// Folder history navigation (Alt+Left/Right)
+			this.scope.register(["Alt"], "ArrowLeft", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.goBackInHistory();
+				return false;
+			});
+			
+			this.scope.register(["Alt"], "ArrowRight", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.goForwardInHistory();
+				return false;
+			});
+			
+			// Recent folders (Ctrl+H)
+			this.scope.register(["Mod"], "h", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showRecentFoldersMenu();
+				return false;
+			});
+			
+			// Quick navigation to root (Ctrl+Home)
+			this.scope.register(["Mod"], "Home", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.navigateToRoot();
+				return false;
+			});
+			
+			// Duplicate file/folder (Ctrl+Shift+D)
+			this.scope.register(["Mod", "Shift"], "d", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.duplicateSelectedFiles();
+				return false;
+			});
+			
+			// Rename file/folder (F2)
+			this.scope.register([], "F2", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.renameSelectedFile();
+				return false;
+			});
+			
+			// Properties/Info (F4)
+			this.scope.register([], "F4", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showFileProperties();
+				return false;
+			});
+			
+			// Refresh current pane (F5 when not copying)
+			this.scope.register(["Ctrl"], "F5", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.refreshCurrentPane();
+				return false;
+			});
+			
+			// Focus address bar / Go to folder (Ctrl+L)
+			this.scope.register(["Mod"], "l", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showGoToFolderDialog();
+				return false;
+			});
+			
+			// Toggle hidden files (Ctrl+.)
+			this.scope.register(["Mod"], ".", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.toggleHiddenFiles();
+				return false;
+			});
+			
+			// Sort menu (Ctrl+S)
+			this.scope.register(["Mod"], "s", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.showSortMenu();
+				return false;
+			});
+			
+			// Advanced selection shortcuts
+			
+			// Select files by pattern (Ctrl+Shift+A)
+			this.scope.register(["Mod", "Shift"], "a", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.selectFilesByPattern();
+				return false;
+			});
+			
+			// Invert selection (Ctrl+Shift+I)
+			this.scope.register(["Mod", "Shift"], "i", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.invertSelection();
+				return false;
+			});
+			
+			// Select all files (not folders) (Ctrl+Shift+F)
+			this.scope.register(["Mod", "Shift"], "f", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.selectAllFiles();
+				return false;
+			});
+			
+			// Select all folders (Ctrl+Shift+D)
+			this.scope.register(["Mod", "Shift"], "o", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.selectAllFolders();
+				return false;
+			});
+			
+			// Sync panes (Ctrl+Shift+S) - make both panes show same folder
+			this.scope.register(["Mod", "Shift"], "s", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.syncPanes();
+				return false;
+			});
+			
+			// Open in new tab (Ctrl+Enter)
+			this.scope.register(["Mod"], "Enter", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.openSelectedInNewTab();
 				return false;
 			});
 		}
@@ -1009,6 +1171,29 @@ export class MidnightCommanderView extends ItemView {
 		});
 	}
 
+	/**
+	 * Toggle quick search overlay for current pane
+	 */
+	private toggleQuickSearch() {
+		// Call the global function exposed by DualPaneManager
+		if ((window as any).toggleQuickSearch) {
+			(window as any).toggleQuickSearch();
+		} else {
+			console.warn('Quick search toggle function not available');
+		}
+	}
+
+	/**
+	 * Show file preview for currently selected file
+	 */
+	private showFilePreview() {
+		// Call the global function exposed by DualPaneManager
+		if ((window as any).showFilePreview) {
+			(window as any).showFilePreview();
+		} else {
+			console.warn('File preview function not available');
+		}
+	}
 	// ====================
 	// ADVANCED NAVIGATION
 	// ====================
@@ -1189,5 +1374,368 @@ export class MidnightCommanderView extends ItemView {
 			leftSelectedIndex: this.leftPane.selectedIndex,
 			rightSelectedIndex: this.rightPane.selectedIndex
 		};
+	}
+
+	// ====================
+	// ENHANCED KEYBOARD SHORTCUTS IMPLEMENTATION
+	// ====================
+
+	/**
+	 * Bookmark current folder (Ctrl+B)
+	 */
+	private bookmarkCurrentFolder() {
+		const activePane = this.getActivePane();
+		const currentFolder = activePane.currentFolder;
+		
+		// Add to bookmarks in settings
+		if (!this.settings.bookmarks) {
+			this.settings.bookmarks = [];
+		}
+		
+		// Check if already bookmarked
+		const existingBookmark = this.settings.bookmarks.find(b => b.path === currentFolder.path);
+		if (!existingBookmark) {
+			this.settings.bookmarks.push({
+				name: currentFolder.name,
+				path: currentFolder.path
+			});
+			this.plugin.saveSettings();
+			console.log(`Bookmarked: ${currentFolder.name}`);
+		} else {
+			console.log(`Already bookmarked: ${currentFolder.name}`);
+		}
+	}
+
+	/**
+	 * Show bookmark menu (Ctrl+Shift+B)
+	 */
+	private showBookmarkMenu() {
+		if (!this.settings.bookmarks || this.settings.bookmarks.length === 0) {
+			console.log('No bookmarks available');
+			return;
+		}
+		
+		const bookmarkMenu = new PopupMenu({
+			className: 'bookmark-menu',
+			items: this.settings.bookmarks.map(bookmark => ({
+				title: bookmark.name,
+				icon: 'bookmark',
+				callback: () => {
+					const folder = this.app.vault.getAbstractFileByPath(bookmark.path);
+					if (folder instanceof TFolder) {
+						const activePane = this.getActivePane();
+						this.navigateToFolder(activePane, folder);
+					}
+				}
+			}))
+		});
+		
+		// Position menu in center
+		const rect = this.contentEl.getBoundingClientRect();
+		bookmarkMenu.showAtPosition({
+			x: rect.left + rect.width / 2 - 150,
+			y: rect.top + 100
+		});
+	}
+
+	/**
+	 * Go back in folder history (Alt+Left)
+	 */
+	private goBackInHistory() {
+		// This would require implementing a history stack
+		// For now, just go up one level
+		const activePane = this.getActivePane();
+		if (activePane.currentFolder.parent) {
+			this.navigateToFolder(activePane, activePane.currentFolder.parent);
+		}
+	}
+
+	/**
+	 * Go forward in folder history (Alt+Right)
+	 */
+	private goForwardInHistory() {
+		// This would require implementing a history stack
+		// For now, just show a message
+		console.log('Forward navigation not yet implemented');
+	}
+
+	/**
+	 * Show recent folders menu (Ctrl+H)
+	 */
+	private showRecentFoldersMenu() {
+		// For now, show commonly accessed folders
+		const recentFolders = [
+			this.app.vault.getRoot(),
+			...this.app.vault.getRoot().children.filter(f => f instanceof TFolder).slice(0, 5)
+		] as TFolder[];
+		
+		const recentMenu = new PopupMenu({
+			className: 'recent-folders-menu',
+			items: recentFolders.map(folder => ({
+				title: folder.path === '/' ? 'Vault Root' : folder.name,
+				icon: 'folder',
+				callback: () => {
+					const activePane = this.getActivePane();
+					this.navigateToFolder(activePane, folder);
+				}
+			}))
+		});
+		
+		// Position menu in center
+		const rect = this.contentEl.getBoundingClientRect();
+		recentMenu.showAtPosition({
+			x: rect.left + rect.width / 2 - 150,
+			y: rect.top + 100
+		});
+	}
+
+	/**
+	 * Navigate to vault root (Ctrl+Home)
+	 */
+	private navigateToRoot() {
+		const activePane = this.getActivePane();
+		const rootFolder = this.app.vault.getRoot();
+		this.navigateToFolder(activePane, rootFolder);
+	}
+
+	/**
+	 * Duplicate selected files (Ctrl+Shift+D)
+	 */
+	private async duplicateSelectedFiles() {
+		const activePane = this.getActivePane();
+		const selectedFiles = this.getSelectedFiles(activePane);
+		
+		if (selectedFiles.length === 0) {
+			const currentFile = activePane.files[activePane.selectedIndex];
+			if (currentFile) {
+				selectedFiles.push(currentFile);
+			}
+		}
+		
+		try {
+			for (const file of selectedFiles) {
+				await this.fileOperations.copyFileInPlace(file);
+			}
+			this.refreshPane(activePane);
+		} catch (error) {
+			console.error('Duplicate operation failed:', error);
+		}
+	}
+
+	/**
+	 * Rename selected file (F2)
+	 */
+	private async renameSelectedFile() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile) {
+			try {
+				await this.fileOperations.renameFile(currentFile);
+				this.refreshPane(activePane);
+			} catch (error) {
+				console.error('Rename operation failed:', error);
+			}
+		}
+	}
+
+	/**
+	 * Show file properties (F4)
+	 */
+	private showFileProperties() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile) {
+			// Show file info in a popup
+			const stats = this.app.vault.adapter.stat(currentFile.path);
+			stats.then(stat => {
+				const infoMenu = new PopupMenu({
+					className: 'file-properties-menu',
+					items: [
+						{ title: `Name: ${currentFile.name}`, icon: 'file', callback: () => {} },
+						{ title: `Path: ${currentFile.path}`, icon: 'folder', callback: () => {} },
+						{ title: `Size: ${stat?.size || 'Unknown'} bytes`, icon: 'info', callback: () => {} },
+						{ title: `Modified: ${stat?.mtime ? new Date(stat.mtime).toLocaleString() : 'Unknown'}`, icon: 'calendar', callback: () => {} }
+					]
+				});
+				
+				const rect = this.contentEl.getBoundingClientRect();
+				infoMenu.showAtPosition({
+					x: rect.left + rect.width / 2 - 200,
+					y: rect.top + 100
+				});
+			}).catch(error => {
+				console.error('Failed to get file properties:', error);
+			});
+		}
+	}
+
+	/**
+	 * Refresh current pane (Ctrl+F5)
+	 */
+	private refreshCurrentPane() {
+		const activePane = this.getActivePane();
+		this.refreshPane(activePane);
+		console.log('Pane refreshed');
+	}
+
+	/**
+	 * Show go to folder dialog (Ctrl+L)
+	 */
+	private showGoToFolderDialog() {
+		// Create a simple input dialog
+		const input = document.createElement('input');
+		input.type = 'text';
+		input.placeholder = 'Enter folder path...';
+		input.style.cssText = `
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			z-index: 1000;
+			padding: 10px;
+			border: 1px solid var(--background-modifier-border);
+			background: var(--background-primary);
+			color: var(--text-normal);
+			border-radius: 4px;
+			width: 300px;
+		`;
+		
+		input.addEventListener('keydown', (e) => {
+			if (e.key === 'Enter') {
+				const path = input.value.trim();
+				const folder = this.app.vault.getAbstractFileByPath(path);
+				if (folder instanceof TFolder) {
+					const activePane = this.getActivePane();
+					this.navigateToFolder(activePane, folder);
+				}
+				document.body.removeChild(input);
+			} else if (e.key === 'Escape') {
+				document.body.removeChild(input);
+			}
+		});
+		
+		document.body.appendChild(input);
+		input.focus();
+	}
+
+	/**
+	 * Toggle hidden files (Ctrl+.)
+	 */
+	private toggleHiddenFiles() {
+		this.settings.showHiddenFiles = !this.settings.showHiddenFiles;
+		this.plugin.saveSettings();
+		this.refreshPane(this.leftPane);
+		this.refreshPane(this.rightPane);
+		console.log(`Hidden files ${this.settings.showHiddenFiles ? 'shown' : 'hidden'}`);
+	}
+
+	/**
+	 * Show sort menu (Ctrl+S)
+	 */
+	private showSortMenu() {
+		const sortMenu = new PopupMenu({
+			className: 'sort-menu',
+			items: [
+				{ title: 'Sort by Name', icon: 'type', callback: () => this.setSortOrder('name') },
+				{ title: 'Sort by Date Modified', icon: 'calendar', callback: () => this.setSortOrder('modified') },
+				{ title: 'Sort by Size', icon: 'ruler', callback: () => this.setSortOrder('size') },
+				{ title: 'Sort by Type', icon: 'file-type', callback: () => this.setSortOrder('type') }
+			]
+		});
+		
+		const rect = this.contentEl.getBoundingClientRect();
+		sortMenu.showAtPosition({
+			x: rect.left + rect.width / 2 - 100,
+			y: rect.top + 100
+		});
+	}
+
+	/**
+	 * Set sort order
+	 */
+	private setSortOrder(sortBy: string) {
+		// This would require implementing different sort functions
+		console.log(`Sort order set to: ${sortBy}`);
+		// For now, just refresh with default sort
+		this.refreshPane(this.getActivePane());
+	}
+
+	/**
+	 * Select files by pattern (Ctrl+Shift+A)
+	 */
+	private selectFilesByPattern() {
+		// Simple pattern selection - for now just select all .md files
+		const activePane = this.getActivePane();
+		activePane.selectedFiles.clear();
+		
+		for (const file of activePane.files) {
+			if (file.name.endsWith('.md')) {
+				activePane.selectedFiles.add(file.path);
+			}
+		}
+		
+		this.renderDualPane();
+		console.log('Selected all .md files');
+	}
+
+	/**
+	 * Invert selection (Ctrl+Shift+I)
+	 */
+	private invertSelection() {
+		const activePane = this.getActivePane();
+		const newSelection = new Set<string>();
+		
+		for (const file of activePane.files) {
+			if (!activePane.selectedFiles.has(file.path)) {
+				newSelection.add(file.path);
+			}
+		}
+		
+		activePane.selectedFiles = newSelection;
+		this.renderDualPane();
+		console.log('Selection inverted');
+	}
+
+	/**
+	 * Select all folders (Ctrl+Shift+O)
+	 */
+	private selectAllFolders() {
+		const activePane = this.getActivePane();
+		activePane.selectedFiles.clear();
+		
+		for (const file of activePane.files) {
+			if (file instanceof TFolder) {
+				activePane.selectedFiles.add(file.path);
+			}
+		}
+		
+		this.renderDualPane();
+		console.log('Selected all folders');
+	}
+
+	/**
+	 * Sync panes - make both show same folder (Ctrl+Shift+S)
+	 */
+	private syncPanes() {
+		const activePane = this.getActivePane();
+		const inactivePane = this.getInactivePane();
+		
+		this.navigateToFolder(inactivePane, activePane.currentFolder);
+		console.log('Panes synchronized');
+	}
+
+	/**
+	 * Open selected file in new tab (Ctrl+Enter)
+	 */
+	private openSelectedInNewTab() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile instanceof TFile) {
+			const newLeaf = this.app.workspace.getLeaf('tab');
+			newLeaf.openFile(currentFile);
+		}
 	}
 }

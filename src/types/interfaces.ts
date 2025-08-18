@@ -16,6 +16,14 @@ export interface MidnightCommanderSettings {
 	previewDelay: number;
 	keymapProfile: 'default' | 'vim';
 	centerBreadcrumbs: boolean;
+	
+	// Enhanced keyboard shortcuts settings
+	bookmarks?: BookmarkItem[];
+}
+
+export interface BookmarkItem {
+	name: string;
+	path: string;
 }
 
 export interface PaneState {

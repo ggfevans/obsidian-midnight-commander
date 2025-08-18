@@ -1,39 +1,74 @@
 import { App, TAbstractFile, TFolder, TFile, Notice, Modal } from 'obsidian';
 import { FileCache } from '../utils/FileCache';
 import { BatchOperations, runInBatch } from '../utils/BatchOperations';
+import { NotificationManager, withNotification, withErrorHandling } from '../utils/NotificationManager';
 
 export class FileOperations {
     constructor(private app: App, private fileCache?: FileCache) {}
 
     /**
-     * Copy files to target folder
+     * Copy files to target folder with progress tracking
      */
     async copyFiles(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         if (files.length === 0) {
-            new Notice('No files selected for copying');
+            NotificationManager.warning('No files selected for copying');
             return;
         }
 
+        return await withNotification(
+            this.executeCopyOperation(files, targetFolder),
+            {
+                errorMessage: 'Failed to copy files',
+                successMessage: `Successfully copied ${files.length} item(s) to ${targetFolder.name}`,
+                showProgress: files.length > 5,
+                progressMessage: `Copying ${files.length} files...`
+            }
+        );
+    }
+
+    private async executeCopyOperation(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
+        const progressNotification = files.length > 3 ? 
+            NotificationManager.progress(`Copying files...`) : null;
+
         try {
-            const operations = files.map(file => this.copyFile(file, targetFolder));
-            await Promise.all(operations);
-            new Notice(`Copied ${files.length} item(s) to ${targetFolder.path}`);
-        } catch (error) {
-            console.error('Error copying files:', error);
-            new Notice(`Error copying files: ${error.message}`, 5000);
-            throw error;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                if (progressNotification) {
+                    const progress = ((i + 1) / files.length) * 100;
+                    progressNotification.update(`Copying ${file.name}...`, progress);
+                }
+                
+                await this.copyFile(file, targetFolder);
+            }
+        } finally {
+            if (progressNotification) {
+                progressNotification.hide();
+            }
         }
     }
 
     /**
-     * Move files to target folder using batch operations
+     * Move files to target folder using batch operations with progress tracking
      */
     async moveFiles(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         if (files.length === 0) {
-            new Notice('No files selected for moving');
+            NotificationManager.warning('No files selected for moving');
             return;
         }
 
+        return await withNotification(
+            this.executeMoveOperation(files, targetFolder),
+            {
+                errorMessage: 'Failed to move files',
+                successMessage: `Successfully moved ${files.length} item(s) to ${targetFolder.name}`,
+                showProgress: files.length > 5,
+                progressMessage: `Moving ${files.length} files...`
+            }
+        );
+    }
+
+    private async executeMoveOperation(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         console.time(`[FileOperations] Move ${files.length} files`);
         console.log(`[FileOperations] Starting batch move of ${files.length} files to ${targetFolder.path}`);
 
@@ -45,12 +80,6 @@ export class FileOperations {
                     batch.addRenameOperation(file, targetPath);
                 }
             ));
-            
-            new Notice(`Moved ${files.length} item(s) to ${targetFolder.path}`);
-        } catch (error) {
-            console.error('Error moving files:', error);
-            new Notice(`Error moving files: ${error.message}`, 5000);
-            throw error;
         } finally {
             console.timeEnd(`[FileOperations] Move ${files.length} files`);
         }
@@ -61,14 +90,40 @@ export class FileOperations {
      */
     async deleteFiles(files: TAbstractFile[]): Promise<void> {
         if (files.length === 0) {
-            new Notice('No files selected for deletion');
+            NotificationManager.warning('No files selected for deletion');
             return;
         }
 
-        // Show confirmation dialog
-        const confirmed = await this.confirmDeletion(files);
-        if (!confirmed) return;
+        // Show enhanced confirmation dialog
+        const fileList = files.map(f => f.name).join(', ');
+        const message = files.length === 1 ? 
+            `Are you sure you want to delete "${files[0].name}"?` :
+            `Are you sure you want to delete ${files.length} items?\n\n${fileList.length > 100 ? fileList.substring(0, 100) + '...' : fileList}`;
+        
+        const confirmed = await NotificationManager.confirm(
+            message,
+            'Confirm Deletion',
+            'Delete',
+            'Cancel'
+        );
+        
+        if (!confirmed) {
+            NotificationManager.info('Deletion cancelled');
+            return;
+        }
 
+        return await withNotification(
+            this.executeDeleteOperation(files),
+            {
+                errorMessage: 'Failed to delete files',
+                successMessage: `Successfully deleted ${files.length} item(s)`,
+                showProgress: files.length > 5,
+                progressMessage: `Deleting ${files.length} files...`
+            }
+        );
+    }
+
+    private async executeDeleteOperation(files: TAbstractFile[]): Promise<void> {
         console.time(`[FileOperations] Delete ${files.length} files`);
         console.log(`[FileOperations] Starting batch deletion of ${files.length} files`);
 
@@ -84,12 +139,6 @@ export class FileOperations {
                     }
                 }
             ));
-            
-            new Notice(`Deleted ${files.length} item(s)`);
-        } catch (error) {
-            console.error('Error deleting files:', error);
-            new Notice(`Error deleting files: ${error.message}`, 5000);
-            throw error;
         } finally {
             console.timeEnd(`[FileOperations] Delete ${files.length} files`);
         }
