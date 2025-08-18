@@ -1,3 +1,7 @@
+/**
+ * Context-menu implementation notes can be found in gVault:
+ * [[01-PROJECTS/obsidian-midnight-commander/Context-Menu Implementation]]
+ */
 import {
 	Plugin,
 	WorkspaceLeaf,

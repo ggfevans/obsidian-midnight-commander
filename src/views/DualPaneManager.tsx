@@ -10,6 +10,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	onPaneStateChange,
 	onFileClick,
 	onFileContextMenu,
+	onNavigateToFolder,
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [containerHeight, setContainerHeight] = useState(400); // Default height
@@ -86,13 +87,11 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	};
 
 	const handleLeftNavigateToFolder = (folder: any) => {
-		// Navigation is handled by the parent view for now
-		console.log('Navigate to folder in left pane:', folder.name);
+		onNavigateToFolder(folder, 'left');
 	};
 
 	const handleRightNavigateToFolder = (folder: any) => {
-		// Navigation is handled by the parent view for now
-		console.log('Navigate to folder in right pane:', folder.name);
+		onNavigateToFolder(folder, 'right');
 	};
 
 	return (

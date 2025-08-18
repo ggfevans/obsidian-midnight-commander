@@ -164,6 +164,7 @@ export class MidnightCommanderView extends ItemView {
 						onPaneStateChange={this.handlePaneStateChange.bind(this)}
 						onFileClick={this.handleFileClick.bind(this)}
 						onFileContextMenu={this.handleFileContextMenu.bind(this)}
+						onNavigateToFolder={this.handleNavigateToFolder.bind(this)}
 					/>
 				</RecoilRoot>
 			</div>
@@ -289,6 +290,11 @@ export class MidnightCommanderView extends ItemView {
 	private handleFileContextMenu(file: TAbstractFile, paneId: 'left' | 'right', position: any) {
 		// Context menu will be implemented in a later phase
 		console.log('Context menu requested for:', file.name, 'in pane:', paneId);
+	}
+
+	private handleNavigateToFolder(folder: TFolder, paneId: 'left' | 'right') {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+		this.navigateToFolder(pane, folder);
 	}
 	
 	// ====================

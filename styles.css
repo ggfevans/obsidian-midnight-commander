@@ -406,3 +406,107 @@
   border-bottom: none; /* Remove border since container handles it */
   min-height: 0; /* Allow shrinking when necessary */
 }
+
+/* ============================= */
+/* BREADCRUMB NAVIGATION STYLES */
+/* ============================= */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.breadcrumb-segment {
+  display: inline-block;
+  padding: 1px 3px;
+  margin: 0;
+  border: none;
+  background: transparent !important;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 2px;
+  transition: none;
+  white-space: nowrap;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.1;
+  font-family: inherit;
+  outline: none !important;
+  text-decoration: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+
+/* Only show background on actual hover, not focus */
+.breadcrumb-segment:hover:not(:focus) {
+  background-color: var(--nav-item-background-hover, var(--background-modifier-hover)) !important;
+  color: var(--nav-item-color-hover, var(--text-normal));
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+/* Allow hover even when focused */
+.breadcrumb-segment:focus:hover {
+  background-color: var(--nav-item-background-hover, var(--background-modifier-hover)) !important;
+  color: var(--nav-item-color-hover, var(--text-normal));
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.breadcrumb-segment:active {
+  background-color: var(--nav-item-background-active, var(--interactive-accent)) !important;
+  color: var(--nav-item-color-active, var(--text-on-accent));
+  transform: translateY(1px);
+  transition: none;
+}
+
+/* Force transparent background when focused but not hovered */
+.breadcrumb-segment:focus:not(:hover):not(:active) {
+  background: transparent !important;
+  color: var(--text-muted);
+  transition: none;
+}
+
+.breadcrumb-segment.current {
+  color: var(--text-normal);
+  font-weight: 600;
+  cursor: default;
+  background: transparent;
+}
+
+.breadcrumb-segment.current:hover {
+  background-color: transparent;
+  color: var(--text-normal);
+}
+
+.breadcrumb-separator {
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+  margin: 0;
+  opacity: 0.6;
+  padding: 0 1px;
+}
+
+.breadcrumb-separator svg {
+  width: 8px;
+  height: 8px;
+}
+
+/* Active pane breadcrumb styling */
+.file-pane.active .breadcrumb-segment {
+  color: var(--text-normal);
+}
+
+.file-pane.active .breadcrumb-segment.current {
+  color: var(--text-normal);
+  font-weight: 600;
+}

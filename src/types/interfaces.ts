@@ -42,6 +42,7 @@ export interface DualPaneManagerProps {
 	onPaneStateChange: (pane: 'left' | 'right', newState: Partial<PaneState>) => void;
 	onFileClick: (file: TAbstractFile, pane: 'left' | 'right', options?: FileClickOptions) => void;
 	onFileContextMenu: (file: TAbstractFile, pane: 'left' | 'right', position: ContextMenuPosition) => void;
+	onNavigateToFolder: (folder: TFolder, pane: 'left' | 'right') => void;
 }
 
 export interface FilePaneProps {
