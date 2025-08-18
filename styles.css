@@ -90,6 +90,9 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
 }
 
 /* Individual file panes */
@@ -374,18 +377,21 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  flex-shrink: 0; /* Prevent unwanted shrinking */
+  border: 1px solid var(--background-modifier-border-hover);
 }
 
 .pane-container.pane-top {
-  /* Top pane styling - no special styles needed, height set via inline styles */
+  border-bottom: none;
 }
 
 .pane-container.pane-bottom {
-  /* Bottom pane styling - no special styles needed, height set via inline styles */
+  border-top: none;
 }
 
 /* Ensure file panes within containers take full height */
 .pane-container .file-pane {
   height: 100%;
-  border-bottom: none; /* Remove border since we're not using flex layout */
+  border-bottom: none; /* Remove border since container handles it */
+  min-height: 0; /* Allow shrinking when necessary */
 }

@@ -23,24 +23,34 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				const height = containerRef.current.clientHeight;
 				if (height > 0) {
 					setContainerHeight(height);
-					// Initialize with 50/50 split if not set
-					if (topPaneHeight + bottomPaneHeight !== height) {
-						setTopPaneHeight(height * 0.5);
-						setBottomPaneHeight(height * 0.5);
-					}
+					// Initialize with 50/50 split accounting for handle height
+					const handleHeight = 8; // Height of resize handle
+					const availableHeight = height - handleHeight;
+					const newTopHeight = Math.floor(availableHeight * 0.5);
+					const newBottomHeight = availableHeight - newTopHeight; // Ensure exact fit
+					
+					setTopPaneHeight(newTopHeight);
+					setBottomPaneHeight(newBottomHeight);
 				}
 			}
 		};
 
-		updateHeight();
+		// Try to get height after a small delay to ensure DOM is ready
+		const timeoutId = setTimeout(updateHeight, 100);
 		
 		// Add resize observer to track container size changes
-		const resizeObserver = new ResizeObserver(updateHeight);
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				updateHeight();
+			}
+		});
+		
 		if (containerRef.current) {
 			resizeObserver.observe(containerRef.current);
 		}
 
 		return () => {
+			clearTimeout(timeoutId);
 			resizeObserver.disconnect();
 		};
 	}, []);
@@ -106,7 +116,6 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				className="resize-handle"
 				onMouseDown={(e) => {
 					e.preventDefault();
-					console.log('Resize started', { containerHeight, topPaneHeight, bottomPaneHeight });
 					const startY = e.clientY;
 					const startTopHeight = topPaneHeight;
 					
@@ -116,16 +125,17 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					
 					const handleMouseMove = (e: MouseEvent) => {
 						const deltaY = e.clientY - startY;
-						const newTopHeight = Math.max(100, Math.min(containerHeight - 100, startTopHeight + deltaY));
-						const newBottomHeight = containerHeight - newTopHeight;
+						// Account for handle height in available space
+						const handleHeight = 8;
+						const availableHeight = containerHeight - handleHeight;
+						const newTopHeight = Math.max(100, Math.min(availableHeight - 100, startTopHeight + deltaY));
+						const newBottomHeight = availableHeight - newTopHeight;
 						
-						console.log('Resizing', { deltaY, newTopHeight, newBottomHeight });
 						setTopPaneHeight(newTopHeight);
 						setBottomPaneHeight(newBottomHeight);
 					};
 					
 					const handleMouseUp = () => {
-						console.log('Resize ended');
 						document.removeEventListener('mousemove', handleMouseMove);
 						document.removeEventListener('mouseup', handleMouseUp);
 						document.body.style.cursor = '';
@@ -137,9 +147,11 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					document.body.style.cursor = 'ns-resize';
 				}}
 				onDoubleClick={() => {
-					const resetHeight = containerHeight / 2;
+					const handleHeight = 8;
+					const availableHeight = containerHeight - handleHeight;
+					const resetHeight = Math.floor(availableHeight / 2);
 					setTopPaneHeight(resetHeight);
-					setBottomPaneHeight(resetHeight);
+					setBottomPaneHeight(availableHeight - resetHeight);
 				}}
 				title="Drag to resize panes (double-click to reset)"
 			>
