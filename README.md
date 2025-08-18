@@ -93,6 +93,14 @@ Or for development:
 - If your source code is in a folder, such as `src`, you can use eslint with this command to analyze all files in that folder:
   - `eslint .\src\`
 
+## Credits & Acknowledgements
+
+This plugin draws inspiration and technical insights from several outstanding projects:
+
+- [Quick Explorer](https://github.com/pjeby/quick-explorer) by PJ Eby - An exceptional file navigation plugin that provides breadcrumb navigation and keyboard-driven menus. Our keyboard navigation and file traversal systems draw significant inspiration from Quick Explorer's excellent implementation.
+
+- The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach.
+
 ## Funding URL
 
 You can include funding URLs where people who use your plugin can financially support it.
