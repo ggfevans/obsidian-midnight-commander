@@ -1,6 +1,8 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
+import { copyFileSync, mkdirSync, existsSync } from "fs";
+import { dirname } from "path";
 
 const banner =
 `/*
@@ -9,7 +11,30 @@ if you want to view the source, please visit the github repository of this plugi
 */
 `;
 
-const prod = (process.argv[2] === "production");
+const mode = process.argv[2] || "watch";
+const prod = (mode === "production");
+const dev = (mode === "development");
+const watch = (mode !== "production" && mode !== "development");
+
+// Function to copy required files to build output
+function copyRequiredFiles() {
+	// Create build-output directory if it doesn't exist
+	if (!existsSync("build-output")) {
+		mkdirSync("build-output", { recursive: true });
+	}
+	
+	// Copy manifest.json
+	if (existsSync("manifest.json")) {
+		copyFileSync("manifest.json", "build-output/manifest.json");
+		console.log("📋 Copied manifest.json");
+	}
+	
+	// Copy styles.css
+	if (existsSync("styles.css")) {
+		copyFileSync("styles.css", "build-output/styles.css");
+		console.log("🎨 Copied styles.css");
+	}
+}
 
 const context = await esbuild.context({
 	banner: {
@@ -37,13 +62,24 @@ const context = await esbuild.context({
 	logLevel: "info",
 	sourcemap: prod ? false : "inline",
 	treeShaking: true,
-	outfile: "main.js",
+	outfile: "build-output/main.js",
 	minify: prod,
 });
 
+// Copy required files first
+copyRequiredFiles();
+
 if (prod) {
 	await context.rebuild();
+	console.log("🚀 Production build complete in ./build-output/");
 	process.exit(0);
-} else {
+} else if (dev) {
+	await context.rebuild();
+	console.log("🛠️  Development build complete in ./build-output/");
+	console.log("📁 Output directory: ./build-output/");
+	process.exit(0);
+} else if (watch) {
+	console.log("👀 Development build complete, watching for changes...");
+	console.log("📁 Output directory: ./build-output/");
 	await context.watch();
 }

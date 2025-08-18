@@ -1,8 +1,195 @@
-/*
+/* Midnight Commander Plugin Styles */
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
+.midnight-commander-view {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--background-primary);
+}
 
-If your plugin does not need CSS, delete this file.
+/* Header with pane titles */
+.midnight-commander-header {
+  display: flex;
+  height: 36px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+}
 
-*/
+.pane-header {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-right: 1px solid var(--background-modifier-border);
+}
+
+.pane-header:last-child {
+  border-right: none;
+}
+
+.pane-title {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Main dual panes container */
+.midnight-commander-panes {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Allow flex children to shrink */
+}
+
+/* Individual file panes */
+.file-pane {
+  flex: 1;
+  min-height: 200px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+
+.file-pane:last-child {
+  border-bottom: none;
+}
+
+/* Active pane styling */
+.file-pane.active {
+  background-color: var(--background-primary);
+}
+
+.file-pane.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--interactive-accent);
+  z-index: 1;
+}
+
+.file-pane.inactive {
+  background-color: var(--background-secondary);
+  opacity: 0.7;
+}
+
+/* File list container */
+.file-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* Individual file items */
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  cursor: pointer;
+  border-radius: 3px;
+  margin: 1px 4px;
+  transition: background-color 0.1s ease;
+  min-height: 32px;
+}
+
+.file-item:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.file-item.selected {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.file-item.selected:hover {
+  background-color: var(--interactive-accent-hover);
+}
+
+.file-item.highlighted {
+  background-color: var(--background-modifier-success);
+}
+
+/* File item icon */
+.file-item-icon {
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.file-item-icon svg {
+  width: 14px;
+  height: 14px;
+  color: currentColor;
+}
+
+.file-item.folder .file-item-icon svg {
+  color: var(--text-accent);
+}
+
+/* File item content */
+.file-item-content {
+  flex: 1;
+  min-width: 0; /* Allow text to shrink */
+  display: flex;
+  flex-direction: column;
+}
+
+.file-item-name {
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.file-item-size {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 1px;
+  line-height: 1;
+}
+
+/* Keyboard focus styles */
+.file-pane.active .file-item.selected {
+  box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+/* Scrollbar styling */
+.file-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.file-list::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+}
+
+.file-list::-webkit-scrollbar-thumb {
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+}
+
+.file-list::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* Empty state styling */
+.file-list:empty::after {
+  content: 'No files in this directory';
+  display: block;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-faint);
+  font-style: italic;
+}
