@@ -1,4 +1,4 @@
-import { TAbstractFile, TFolder, WorkspaceLeaf } from 'obsidian';
+import { TAbstractFile, TFolder, WorkspaceLeaf, App } from 'obsidian';
 
 export interface MidnightCommanderSettings {
 	// View settings
@@ -50,12 +50,13 @@ export interface MidnightCommanderViewProps {
 }
 
 export interface DualPaneManagerProps {
+	app: App;
 	leftPane: PaneState;
 	rightPane: PaneState;
-	onPaneStateChange: (pane: 'left' | 'right', newState: Partial<PaneState>) => void;
-	onFileClick: (file: TAbstractFile, pane: 'left' | 'right', options?: FileClickOptions) => void;
-	onFileContextMenu: (file: TAbstractFile, pane: 'left' | 'right', position: ContextMenuPosition) => void;
-	onNavigateToFolder: (folder: TFolder, pane: 'left' | 'right') => void;
+	onPaneStateChange: (paneId: 'left' | 'right', newState: Partial<PaneState>) => void;
+	onFileClick: (file: TAbstractFile, paneId: 'left' | 'right', options?: any) => void;
+	onFileContextMenu: (file: TAbstractFile, paneId: 'left' | 'right', position: any) => void;
+	onNavigateToFolder: (folder: TFolder, paneId: 'left' | 'right') => void;
 }
 
 export interface FilePaneProps {

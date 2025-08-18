@@ -7,6 +7,7 @@ import { FilePreview } from '../components/FilePreview';
 import { DualPaneManagerProps } from '../types/interfaces';
 
 export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
+	app,
 	leftPane,
 	rightPane,
 	onPaneStateChange,
@@ -323,6 +324,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 			{/* File preview overlay */}
 			{showFilePreview && previewFile && (
 				<FilePreview
+					app={app}
 					file={previewFile}
 					isVisible={showFilePreview}
 					onClose={handleCloseFilePreview}

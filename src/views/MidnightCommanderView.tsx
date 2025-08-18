@@ -397,6 +397,7 @@ export class MidnightCommanderView extends ItemView {
 			<div className="midnight-commander-view">
 				<RecoilRoot>
 					<DualPaneManager
+						app={this.app}
 						leftPane={this.leftPane}
 						rightPane={this.rightPane}
 						onPaneStateChange={this.handlePaneStateChange.bind(this)}
@@ -669,7 +670,7 @@ export class MidnightCommanderView extends ItemView {
 					.setIcon('external-link')
 					.onClick(() => {
 						// Show folder in system file explorer
-						this.app.showInFolder(file.path);
+						this.revealInFileExplorer(file.path);
 					});
 			});
 
@@ -754,7 +755,7 @@ export class MidnightCommanderView extends ItemView {
 					.setIcon('external-link')
 					.onClick(() => {
 						// Show file in system file explorer
-						this.app.showInFolder(file.path);
+						this.revealInFileExplorer(file.path);
 					});
 			});
 
@@ -1736,6 +1737,98 @@ export class MidnightCommanderView extends ItemView {
 		if (currentFile instanceof TFile) {
 			const newLeaf = this.app.workspace.getLeaf('tab');
 			newLeaf.openFile(currentFile);
+		}
+	}
+
+	/**
+	 * Reveal file or folder in system file explorer using platform-specific commands
+	 */
+	private async revealInFileExplorer(path: string) {
+		try {
+			// Get the full absolute path
+			// Use path property which exists on FileSystemAdapter in Obsidian
+			const vaultPath = (this.app.vault.adapter as any).path || '';
+			const fullPath = require('path').resolve(vaultPath, path);
+			
+			// Detect platform and use appropriate command
+			const { exec } = require('child_process');
+			let command: string;
+			
+			if (process.platform === 'win32') {
+				// Windows: Use explorer.exe with /select flag to highlight the file
+				command = `explorer.exe /select,"${fullPath}"`;
+			} else if (process.platform === 'darwin') {
+				// macOS: Use open with -R flag to reveal in Finder
+				command = `open -R "${fullPath}"`;
+			} else {
+				// Linux: Try common file managers
+				// First try nautilus (GNOME), then dolphin (KDE), then thunar (XFCE)
+				const fileManagers = [
+					`nautilus --select "${fullPath}"`,
+					`dolphin --select "${fullPath}"`,
+					`thunar "${require('path').dirname(fullPath)}"`,
+					`xdg-open "${require('path').dirname(fullPath)}"`
+				];
+				
+				// Try each file manager until one succeeds
+				for (const fm of fileManagers) {
+					try {
+						await new Promise<void>((resolve, reject) => {
+							exec(fm, (error: any) => {
+								if (error) reject(error);
+								else resolve();
+							});
+						});
+						return; // Success, exit the function
+					} catch (e) {
+						// Try next file manager
+						continue;
+					}
+				}
+				
+				// If no file manager worked, fall back to xdg-open with directory
+				command = `xdg-open "${require('path').dirname(fullPath)}"`;
+			}
+			
+			// Execute the command
+			if (command) {
+				exec(command, (error: any) => {
+					if (error) {
+						console.error('Failed to reveal file in explorer:', error);
+						// Fall back to opening the parent directory
+						this.revealParentDirectory(fullPath);
+					}
+				});
+			}
+		} catch (error) {
+			console.error('Error revealing file in explorer:', error);
+		}
+	}
+
+	/**
+	 * Fall back method to open parent directory when reveal fails
+	 */
+	private revealParentDirectory(fullPath: string) {
+		try {
+			const { exec } = require('child_process');
+			const parentDir = require('path').dirname(fullPath);
+			let command: string;
+			
+			if (process.platform === 'win32') {
+				command = `explorer.exe "${parentDir}"`;
+			} else if (process.platform === 'darwin') {
+				command = `open "${parentDir}"`;
+			} else {
+				command = `xdg-open "${parentDir}"`;
+			}
+			
+			exec(command, (error: any) => {
+				if (error) {
+					console.error('Failed to open parent directory:', error);
+				}
+			});
+		} catch (error) {
+			console.error('Error opening parent directory:', error);
 		}
 	}
 }
