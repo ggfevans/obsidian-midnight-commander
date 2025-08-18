@@ -332,18 +332,115 @@ export class MidnightCommanderView extends ItemView {
 	}
 
 	private handleFileContextMenu(file: TAbstractFile, paneId: 'left' | 'right', position: any) {
-		// Use Obsidian's native Menu class - same as default file explorer
+		// Use Obsidian's native Menu class with comprehensive menu items
 		const activePane = this.getActivePane();
 		const menu = new Menu();
 
-		// Let Obsidian populate the menu with standard file/folder operations
-		if (file instanceof TFile) {
-			// Trigger standard file context menu
-			this.app.workspace.trigger('file-menu', menu, file, 'file-explorer');
-		} else if (file instanceof TFolder) {
-			// Trigger standard folder context menu
-			this.app.workspace.trigger('file-menu', menu, file, 'file-explorer');
+		// Let Obsidian populate the menu with standard operations first
+		this.app.workspace.trigger('file-menu', menu, file, 'file-explorer');
+
+		// Add missing items that should be in folder context menus
+		if (file instanceof TFolder) {
+			// Add "New" items for folders at the top
+			menu.addItem((item) => {
+				item.setTitle('New note')
+					.setIcon('edit')
+					.onClick(async () => {
+						// Create new note in this folder
+						try {
+							const newFile = await this.app.vault.create(
+								`${file.path}/Untitled.md`,
+								''
+							);
+							this.app.workspace.getLeaf().openFile(newFile);
+							this.refreshPane(activePane);
+						} catch (error) {
+							console.error('Failed to create new note:', error);
+						}
+					});
+			});
+
+			menu.addItem((item) => {
+				item.setTitle('New folder')
+					.setIcon('folder-plus')
+					.onClick(async () => {
+						// Create new folder
+						await this.fileOperations.createNewFolder(file);
+						this.refreshPane(activePane);
+					});
+			});
+
+			menu.addSeparator();
+
+			// Add "Make a copy" for folders
+			menu.addItem((item) => {
+				item.setTitle('Make a copy')
+					.setIcon('copy')
+					.onClick(async () => {
+						try {
+							await this.fileOperations.copyFileInPlace(file);
+							this.refreshPane(activePane);
+						} catch (error) {
+							console.error('Failed to copy folder:', error);
+						}
+					});
+			});
+
+			// Add "Search in folder"
+			menu.addItem((item) => {
+				item.setTitle('Search in folder')
+					.setIcon('search')
+					.onClick(() => {
+						// Open search with folder constraint
+						(this.app as any).internalPlugins.plugins['global-search'].instance.openGlobalSearch(`path:${file.path}`);
+					});
+			});
+
+			menu.addSeparator();
+		} else {
+			// Add "Make a copy" for files
+			menu.addItem((item) => {
+				item.setTitle('Make a copy')
+					.setIcon('copy')
+					.onClick(async () => {
+						try {
+							await this.fileOperations.copyFileInPlace(file);
+							this.refreshPane(activePane);
+						} catch (error) {
+							console.error('Failed to copy file:', error);
+						}
+					});
+			});
+
+			menu.addSeparator();
 		}
+
+		// Add Rename and Delete for both files and folders
+		// Note: We'll add these items regardless since we can't easily check existing items
+
+		menu.addItem((item) => {
+			item.setTitle('Rename...')
+				.setIcon('pencil')
+				.onClick(async () => {
+					try {
+						await this.fileOperations.renameFile(file);
+						this.refreshPane(activePane);
+					} catch (error) {
+						console.error('Failed to rename file:', error);
+					}
+				});
+		});
+
+		menu.addItem((item) => {
+			item.setTitle('Delete')
+				.setIcon('trash')
+				.onClick(async () => {
+					await this.fileOperations.deleteFiles([file]);
+					this.refreshPane(activePane);
+				});
+			// Add the warning class to make it red like the native delete button
+			(item as any).dom.addClass('is-warning');
+		});
 
 		// Show the menu at the mouse position
 		menu.showAtPosition(position);

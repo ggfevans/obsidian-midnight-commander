@@ -118,6 +118,41 @@ export class FileOperations {
         }
     }
 
+    /**
+     * Make a copy of a file or folder in the same directory
+     */
+    async copyFileInPlace(file: TAbstractFile): Promise<void> {
+        if (!file.parent) {
+            new Notice('Cannot copy root directory');
+            return;
+        }
+
+        try {
+            const targetPath = this.generateCopyName(file);
+            
+            if (file instanceof TFile) {
+                const content = await this.app.vault.read(file);
+                await this.app.vault.create(targetPath, content);
+            } else if (file instanceof TFolder) {
+                // Create the folder first
+                await this.app.vault.createFolder(targetPath);
+                
+                // Recursively copy folder contents
+                const targetFolderObj = this.app.vault.getAbstractFileByPath(targetPath) as TFolder;
+                const children = file.children;
+                for (const child of children) {
+                    await this.copyFile(child, targetFolderObj);
+                }
+            }
+            
+            new Notice(`Created copy: ${targetPath.split('/').pop()}`);
+        } catch (error) {
+            console.error('Error copying file:', error);
+            new Notice(`Error copying file: ${error.message}`, 3000);
+            throw error;
+        }
+    }
+
     private async copyFile(file: TAbstractFile, targetFolder: TFolder): Promise<void> {
         const targetPath = this.generateUniqueTargetPath(file, targetFolder);
 
@@ -162,6 +197,35 @@ export class FileOperations {
                 targetPath = `${targetFolder.path}/${newName}`;
                 counter++;
             } while (this.app.vault.getAbstractFileByPath(targetPath));
+        }
+        
+        return targetPath;
+    }
+
+    /**
+     * Generate a copy name for a file/folder in the same directory
+     */
+    private generateCopyName(file: TAbstractFile): string {
+        const parentPath = file.parent?.path || '';
+        const extension = file instanceof TFile ? file.extension : '';
+        const basename = extension ? 
+            file.name.replace(new RegExp(`\\.${extension}$`), '') : 
+            file.name;
+        
+        // Try "Copy of [name]" first
+        let copyName = extension ? 
+            `Copy of ${basename}.${extension}` : 
+            `Copy of ${basename}`;
+        let targetPath = parentPath ? `${parentPath}/${copyName}` : copyName;
+        
+        // If that exists, try "Copy of [name] 2", "Copy of [name] 3", etc.
+        let counter = 2;
+        while (this.app.vault.getAbstractFileByPath(targetPath)) {
+            copyName = extension ? 
+                `Copy of ${basename} ${counter}.${extension}` : 
+                `Copy of ${basename} ${counter}`;
+            targetPath = parentPath ? `${parentPath}/${copyName}` : copyName;
+            counter++;
         }
         
         return targetPath;

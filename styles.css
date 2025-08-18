@@ -601,3 +601,104 @@
 		transition: none;
 	}
 }
+
+/* ============================= */
+/* MODAL DIALOG STYLES */
+/* ============================= */
+
+/* Modal button container */
+.modal-button-container {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Modal buttons */
+.modal-button-container button {
+	padding: 8px 16px;
+	border-radius: var(--button-radius);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+	transition: background-color 0.15s ease, color 0.15s ease;
+	border: 1px solid var(--background-modifier-border);
+	background-color: var(--interactive-normal);
+	color: var(--text-normal);
+}
+
+.modal-button-container button:hover {
+	background-color: var(--interactive-hover);
+}
+
+.modal-button-container button:active {
+	background-color: var(--interactive-active);
+	transform: translateY(1px);
+}
+
+/* Primary/OK button styling */
+.modal-button-container button:first-child {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-color: var(--interactive-accent);
+}
+
+.modal-button-container button:first-child:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+/* Warning/Delete button styling */
+.modal-button-container button.mod-warning {
+	background-color: var(--color-red);
+	color: var(--text-on-accent);
+	border-color: var(--color-red);
+}
+
+.modal-button-container button.mod-warning:hover {
+	background-color: var(--color-red-hover, var(--color-red));
+	opacity: 0.9;
+}
+
+/* Modal input fields */
+.modal .modal-content input[type="text"] {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--input-radius);
+	background-color: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-family: var(--font-interface);
+	margin-bottom: 16px;
+	box-sizing: border-box;
+}
+
+.modal .modal-content input[type="text"]:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px var(--interactive-accent-rgb, var(--interactive-accent)) / 0.2;
+}
+
+/* Modal headings */
+.modal .modal-content h2 {
+	margin: 0 0 16px 0;
+	font-size: var(--font-ui-large);
+	font-weight: var(--font-weight-bold);
+	color: var(--text-normal);
+}
+
+/* Modal text content */
+.modal .modal-content p {
+	margin: 0 0 16px 0;
+	color: var(--text-normal);
+	line-height: var(--line-height-normal);
+}
+
+/* Animation for reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+	.modal-button-container button {
+		transition: none;
+	}
+}
