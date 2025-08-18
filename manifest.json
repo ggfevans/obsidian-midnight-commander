@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-midnight-commander",
 	"name": "Midnight Commander",
-	"version": "0.1.0",
+	"version": "0.2.0",
 	"minAppVersion": "1.0.0",
 	"description": "Dual-pane file manager for Obsidian inspired by Midnight Commander",
 	"author": "ggfevans",
