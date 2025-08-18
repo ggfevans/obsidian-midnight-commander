@@ -1,17 +1,22 @@
-# Obsidian Sample Plugin
+# Obsidian Midnight Commander
 
-This is a sample plugin for Obsidian (https://obsidian.md).
+A dual-pane file manager for Obsidian inspired by the classic Midnight Commander, built with React and TypeScript.
 
-This project uses TypeScript to provide type checking and documentation.
-The repo depends on the latest plugin API (obsidian.d.ts) in TypeScript Definition format, which contains TSDoc comments describing what it does.
+## Features
 
-This sample plugin demonstrates some of the basic functionality the plugin API can do.
+- **Dual-pane interface**: Navigate files with two independent panes
+- **Keyboard navigation**: Tab to switch panes, arrow keys to navigate, Enter to open
+- **React-powered UI**: Modern, responsive interface built with React 18
+- **State management**: Uses Recoil for efficient state management across panes
+- **TypeScript**: Full type safety and excellent developer experience
 
-- Adds a ribbon icon, which shows a Notice when clicked.
-- Adds a command "Open Sample Modal" which opens a Modal.
-- Adds a plugin setting tab to the settings page.
-- Registers a global click event and output 'click' to the console.
-- Registers a global interval which logs 'setInterval' to the console.
+## Current Status
+
+This plugin is in **early development**. Current features include:
+- Basic dual-pane file browser
+- Keyboard navigation between panes
+- File and folder browsing
+- Integration with Obsidian's workspace system
 
 ## First time developing plugins?
 
@@ -45,16 +50,35 @@ Quick starting guide for new plugin devs:
 - Make sure you have a `README.md` file in the root of your repo.
 - Make a pull request at https://github.com/obsidianmd/obsidian-releases to add your plugin.
 
-## How to use
+## Development Setup
 
-- Clone this repo.
-- Make sure your NodeJS is at least v16 (`node --version`).
-- `npm i` or `yarn` to install dependencies.
-- `npm run dev` to start compilation in watch mode.
+1. Clone this repo
+2. Make sure your NodeJS is at least v16 (`node --version`)
+3. `npm i` to install dependencies
+4. `npm run dev` to start compilation in watch mode
+5. Files will be built to `./build-output/` directory
+
+## Build Commands
+
+- `npm run dev` - Development build with watch mode and sourcemaps
+- `npm run build` - Production build (minified, no sourcemaps)
+
+Both commands will:
+- Create the `./build-output/` directory
+- Copy `manifest.json` and `styles.css` 
+- Bundle TypeScript/React code to `main.js`
 
 ## Manually installing the plugin
 
-- Copy over `main.js`, `styles.css`, `manifest.json` to your vault `VaultFolder/.obsidian/plugins/your-plugin-id/`.
+1. Run `npm run build` to create the build output
+2. Copy the entire `./build-output/` folder contents to your vault:
+   `VaultFolder/.obsidian/plugins/obsidian-midnight-commander/`
+3. Enable the plugin in Obsidian settings
+
+Or for development:
+1. Run `npm run dev` to start watch mode  
+2. Create a symlink from your vault's plugins folder to `./build-output/`
+3. Reload Obsidian when you make changes
 
 ## Improve code quality with eslint (optional)
 
