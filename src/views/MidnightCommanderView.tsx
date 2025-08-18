@@ -8,6 +8,7 @@ import { PaneState, MidnightCommanderSettings } from '../types/interfaces';
 import { FileOperations } from '../operations/FileOperations';
 import { FolderMenu } from '../core/FolderMenu';
 import { PopupMenu } from '../core/PopupMenu';
+import { NavigationService } from '../services/NavigationService';
 
 export const VIEW_TYPE_MIDNIGHT_COMMANDER = 'midnight-commander-view';
 
@@ -18,6 +19,7 @@ export class MidnightCommanderView extends ItemView {
 	rightPane: PaneState;
 	settings: MidnightCommanderSettings;
 	fileOperations: FileOperations;
+	navigationService: NavigationService;
 
 	constructor(leaf: WorkspaceLeaf, plugin: MidnightCommanderPlugin) {
 		super(leaf);
@@ -46,6 +48,7 @@ export class MidnightCommanderView extends ItemView {
 		
 		// Initialize file operations
 		this.fileOperations = new FileOperations(this.app);
+		this.navigationService = new NavigationService(this.app);
 	}
 
 	getViewType(): string {
@@ -164,6 +167,31 @@ export class MidnightCommanderView extends ItemView {
 			this.scope.register(["Mod"], "p", (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showCommandPalette();
+				return false;
+			});
+
+			// File navigation commands (Ctrl+Shift combinations)
+			this.scope.register(["Mod", "Shift"], "ArrowUp", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.navigateToFirstFile();
+				return false;
+			});
+
+			this.scope.register(["Mod", "Shift"], "ArrowDown", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.navigateToLastFile();
+				return false;
+			});
+
+			this.scope.register(["Mod"], "ArrowUp", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.navigateToPreviousFile();
+				return false;
+			});
+
+			this.scope.register(["Mod"], "ArrowDown", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.navigateToNextFile();
 				return false;
 			});
 		}
@@ -620,6 +648,34 @@ export class MidnightCommanderView extends ItemView {
 					callback: () => {
 						this.createNewFolder();
 					}
+				},
+				{
+					title: 'Navigate to next file',
+					icon: 'arrow-down-circle',
+					callback: () => {
+						this.navigateToNextFile();
+					}
+				},
+				{
+					title: 'Navigate to previous file',
+					icon: 'arrow-up-circle',
+					callback: () => {
+						this.navigateToPreviousFile();
+					}
+				},
+				{
+					title: 'Go to first file',
+					icon: 'chevrons-up',
+					callback: () => {
+						this.navigateToFirstFile();
+					}
+				},
+				{
+					title: 'Go to last file',
+					icon: 'chevrons-down',
+					callback: () => {
+						this.navigateToLastFile();
+					}
 				}
 			]
 		});
@@ -630,5 +686,91 @@ export class MidnightCommanderView extends ItemView {
 			x: rect.left + rect.width / 2 - 200, // Center horizontally
 			y: rect.top + 100 // A bit down from top
 		});
+	}
+
+	// ====================
+	// ADVANCED NAVIGATION
+	// ====================
+
+	/**
+	 * Navigate to next file in active pane using NavigationService
+	 */
+	private navigateToNextFile() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile instanceof TFile) {
+			const nextFile = this.navigationService.navigateFile(currentFile, 1, true);
+			if (nextFile) {
+				this.selectAndNavigateToFile(nextFile);
+			}
+		}
+	}
+
+	/**
+	 * Navigate to previous file in active pane using NavigationService
+	 */
+	private navigateToPreviousFile() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile instanceof TFile) {
+			const prevFile = this.navigationService.navigateFile(currentFile, -1, true);
+			if (prevFile) {
+				this.selectAndNavigateToFile(prevFile);
+			}
+		}
+	}
+
+	/**
+	 * Navigate to first file in current folder
+	 */
+	private navigateToFirstFile() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile instanceof TFile) {
+			const firstFile = this.navigationService.navigateFile(currentFile, -1, false);
+			if (firstFile) {
+				this.selectAndNavigateToFile(firstFile);
+			}
+		}
+	}
+
+	/**
+	 * Navigate to last file in current folder
+	 */
+	private navigateToLastFile() {
+		const activePane = this.getActivePane();
+		const currentFile = activePane.files[activePane.selectedIndex];
+		
+		if (currentFile instanceof TFile) {
+			const lastFile = this.navigationService.navigateFile(currentFile, 1, false);
+			if (lastFile) {
+				this.selectAndNavigateToFile(lastFile);
+			}
+		}
+	}
+
+	/**
+	 * Select a file in the active pane and navigate folder if needed
+	 */
+	private selectAndNavigateToFile(file: TFile) {
+		const activePane = this.getActivePane();
+		
+		// Check if file is in current folder
+		if (file.parent === activePane.currentFolder) {
+			// File is in current folder, just select it
+			this.selectFileByName(activePane, file.name);
+		} else {
+			// Navigate to parent folder and select file
+			if (file.parent) {
+				this.navigateToFolder(activePane, file.parent);
+				// Wait for next tick to ensure folder is loaded
+				setTimeout(() => {
+					this.selectFileByName(activePane, file.name);
+				}, 0);
+			}
+		}
 	}
 }
