@@ -7,24 +7,29 @@
   background-color: var(--background-primary);
 }
 
-/* Header with pane titles */
-.midnight-commander-header {
-  display: flex;
-  height: 36px;
-  border-bottom: 1px solid var(--background-modifier-border);
-  background-color: var(--background-secondary);
-}
-
-.pane-header {
-  flex: 1;
+/* Individual pane headers (now within each pane) */
+.file-pane .pane-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  height: 32px;
   padding: 0 12px;
-  border-right: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
 }
 
-.pane-header:last-child {
-  border-right: none;
+.file-pane.active .pane-header {
+  background-color: var(--background-primary);
+  border-bottom-color: var(--interactive-accent);
+}
+
+.pane-path {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .pane-title {
@@ -34,6 +39,50 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.file-pane.active .pane-title {
+  color: var(--text-normal);
+  font-weight: 600;
+}
+
+.pane-file-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.file-pane.active .pane-file-count {
+  color: var(--text-muted);
+}
+
+.pane-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pane-selection-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  background-color: var(--background-modifier-border);
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.file-pane.active .pane-selection-count {
+  background-color: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.pane-active-indicator {
+  font-size: 10px;
+  color: var(--interactive-accent);
+  line-height: 1;
 }
 
 /* Main dual panes container */

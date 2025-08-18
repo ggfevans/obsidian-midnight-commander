@@ -46,19 +46,6 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 
 	return (
 		<div className="midnight-commander-dual-pane">
-			<div className="midnight-commander-header">
-				<div className="pane-header">
-					<span className="pane-title">
-						{leftPane.currentFolder.path || '/'}
-					</span>
-				</div>
-				<div className="pane-header">
-					<span className="pane-title">
-						{rightPane.currentFolder.path || '/'}
-					</span>
-				</div>
-			</div>
-			
 			<div className="midnight-commander-panes">
 				<FilePane
 					paneState={leftPane}

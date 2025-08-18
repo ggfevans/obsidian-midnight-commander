@@ -85,6 +85,30 @@ export const FilePane: React.FC<FilePaneProps> = ({
 			className={`file-pane ${paneState.isActive ? 'active' : 'inactive'}`}
 			data-pane-id={paneState.id}
 		>
+			{/* Individual pane header */}
+			<div className="pane-header">
+				<div className="pane-path">
+					<span className="pane-title">
+						{paneState.currentFolder.path || '/'}
+					</span>
+					<span className="pane-file-count">
+						({files.length} item{files.length !== 1 ? 's' : ''})
+					</span>
+				</div>
+				<div className="pane-status">
+					{paneState.selectedFiles.size > 0 && (
+						<span className="pane-selection-count">
+							{paneState.selectedFiles.size} selected
+						</span>
+					)}
+					{paneState.isActive && (
+						<span className="pane-active-indicator" title="Active pane">
+							●
+						</span>
+					)}
+				</div>
+			</div>
+			
 			{files.length === 0 ? (
 				<div className="file-list-empty">
 					<p>No files in this directory</p>
