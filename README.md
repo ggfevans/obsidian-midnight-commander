@@ -117,6 +117,42 @@ If you have multiple URLs, you can also do:
 }
 ```
 
+## Design Guidelines
+
+### Navigation Styling
+
+This plugin follows Obsidian's navigation component styling patterns to ensure visual consistency with the native file explorer. We use Obsidian's CSS variables for navigation components as defined in the [Navigation CSS Variables Reference](https://docs.obsidian.md/Reference/CSS+variables/Components/Navigation).
+
+Key variables we use:
+- `--nav-item-background-hover` - Background on hover
+- `--nav-item-background-active` - Background for active/selected items
+- `--nav-item-background-selected` - Background for multi-selected items
+- `--nav-item-color-hover` - Text color on hover
+- `--nav-item-color-active` - Text color for active items
+- `--nav-item-color-selected` - Text color for selected items
+- `--nav-item-weight-hover` - Font weight on hover
+- `--nav-item-weight-active` - Font weight for active items
+
+**Usage examples:**
+```css
+.file-item.is-active {
+  background-color: var(--nav-item-background-active);
+  color: var(--nav-item-color-active);
+}
+
+.file-item:hover {
+  background-color: var(--nav-item-background-hover);
+  color: var(--nav-item-color-hover);
+}
+
+.file-item.is-selected {
+  background-color: var(--nav-item-background-selected);
+  color: var(--nav-item-color-selected);
+}
+```
+
+This approach ensures the plugin automatically adapts to different themes and maintains visual consistency with Obsidian's file explorer.
+
 ## API Documentation
 
 See https://github.com/obsidianmd/obsidian-api
