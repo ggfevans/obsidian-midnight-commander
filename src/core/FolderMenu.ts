@@ -11,6 +11,7 @@
 import { TAbstractFile, TFile, TFolder, App, HoverPopover } from 'obsidian';
 import { PopupMenu, PopupMenuItem } from './PopupMenu';
 import { FileOperations } from '../operations/FileOperations';
+import { AutoPreviewService } from '../services/AutoPreviewService';
 
 export interface FolderMenuOptions {
     app: App;
@@ -20,6 +21,8 @@ export interface FolderMenuOptions {
     onFolderNavigate?: (folder: TFolder) => void;
     className?: string;
     onClose?: () => void;
+    enableAutoPreview?: boolean;
+    previewDelay?: number;
 }
 
 /**
@@ -33,6 +36,7 @@ export class FolderMenu extends PopupMenu {
     protected autoPreview = false;
     protected hoverPopover?: HoverPopover;
     protected previewDelay = 300;
+    protected autoPreviewService?: AutoPreviewService;
     protected onFileSelect?: (file: TAbstractFile) => void;
     protected onFolderNavigate?: (folder: TFolder) => void;
 
@@ -49,6 +53,16 @@ export class FolderMenu extends PopupMenu {
         this.onFolderNavigate = options.onFolderNavigate;
         
         this.fileOperations = new FileOperations(this.app);
+        
+        // Initialize auto-preview service if enabled
+        if (options.enableAutoPreview !== false) {
+            this.autoPreviewService = new AutoPreviewService({
+                app: this.app,
+                delayMs: options.previewDelay || this.previewDelay,
+                showPreview: true
+            });
+            this.autoPreviewService.load();
+        }
         
         // Load folder contents
         this.loadFolderContents();
@@ -305,29 +319,42 @@ export class FolderMenu extends PopupMenu {
             return;
         }
         
-        // Use Obsidian's hover system
-        setTimeout(() => {
-            if (this.selectedIndex >= 0 && this.autoPreview) {
-                this.app.workspace.trigger(
-                    'hover-link',
-                    {
-                        event: null,
-                        source: 'folder-menu',
-                        hoverParent: this.dom,
-                        targetEl: this.dom.children[this.selectedIndex] as HTMLElement,
-                        linktext: selectedFile.path,
-                        sourcePath: ''
-                    }
-                );
+        // Use enhanced AutoPreviewService if available
+        if (this.autoPreviewService) {
+            const selectedEl = this.dom.children[this.selectedIndex] as HTMLElement;
+            if (selectedEl) {
+                this.autoPreviewService.handleKeyboardNavigation('down', selectedFile, selectedEl);
             }
-        }, this.previewDelay);
+        } else {
+            // Fallback to original hover system
+            setTimeout(() => {
+                if (this.selectedIndex >= 0 && this.autoPreview) {
+                    this.app.workspace.trigger(
+                        'hover-link',
+                        {
+                            event: null,
+                            source: 'folder-menu',
+                            hoverParent: this.dom,
+                            targetEl: this.dom.children[this.selectedIndex] as HTMLElement,
+                            linktext: selectedFile.path,
+                            sourcePath: ''
+                        }
+                    );
+                }
+            }, this.previewDelay);
+        }
     }
 
     /**
      * Hide current preview
      */
     protected hidePreview() {
-        // Note: HoverPopover doesn't have a hide method, it manages itself
+        // Use AutoPreviewService if available
+        if (this.autoPreviewService) {
+            this.autoPreviewService.closePreview();
+        }
+        
+        // Fallback: Note: HoverPopover doesn't have a hide method, it manages itself
         if (this.hoverPopover) {
             this.hoverPopover = undefined;
         }
@@ -469,6 +496,13 @@ export class FolderMenu extends PopupMenu {
 
     hide() {
         this.hidePreview();
+        
+        // Cleanup auto-preview service
+        if (this.autoPreviewService) {
+            this.autoPreviewService.unload();
+            this.autoPreviewService = undefined;
+        }
+        
         return super.hide();
     }
 }

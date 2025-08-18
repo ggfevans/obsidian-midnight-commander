@@ -539,7 +539,9 @@ export class MidnightCommanderView extends ItemView {
 			onFolderNavigate: (folder) => {
 				// Navigate to the folder in active pane
 				this.navigateToFolder(activePane, folder);
-			}
+			},
+			enableAutoPreview: true,
+			previewDelay: 300
 		});
 
 		// Position menu next to the active pane
