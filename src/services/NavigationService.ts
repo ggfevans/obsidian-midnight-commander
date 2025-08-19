@@ -14,8 +14,12 @@ export class NavigationService {
 	/**
 	 * Navigate to next/previous/first/last file in folder
 	 */
-	public navigateFile(file: TAbstractFile, direction: number, relative: boolean): TFile | null {
-		let seen = new Set<TAbstractFile>();
+	public navigateFile(
+		file: TAbstractFile,
+		direction: number,
+		relative: boolean
+	): TFile | null {
+		const seen = new Set<TAbstractFile>();
 		let currentFile: TAbstractFile = file;
 		let parentFolder = file.parent;
 
@@ -34,19 +38,20 @@ export class NavigationService {
 
 			while (pos >= 0 && pos < allFiles.length) {
 				const nextFile = allFiles[pos];
-				
+
 				if (nextFile instanceof TFile) {
 					return nextFile;
 				} else if (nextFile instanceof TFolder) {
 					const subFiles = this.getSortedFiles(nextFile, false);
-					const subFile = direction > 0 ? subFiles[0] : subFiles[subFiles.length - 1];
+					const subFile =
+						direction > 0 ? subFiles[0] : subFiles[subFiles.length - 1];
 					if (subFile instanceof TFile) {
 						return subFile;
 					}
 				}
 				pos += direction;
 			}
-			
+
 			currentFile = parentFolder;
 			parentFolder = currentFile.parent;
 		}
@@ -62,13 +67,15 @@ export class NavigationService {
 		const collator = new Intl.Collator(undefined, {
 			usage: 'sort',
 			sensitivity: 'base',
-			numeric: true
+			numeric: true,
 		});
 
-		const items = children.slice().sort((a, b) => collator.compare(a.name, b.name));
+		const items = children
+			.slice()
+			.sort((a, b) => collator.compare(a.name, b.name));
 		const folders = items.filter(f => f instanceof TFolder) as TFolder[];
 		const files = items.filter(f => f instanceof TFile) as TFile[];
-		
+
 		folders.sort((a, b) => collator.compare(a.name, b.name));
 		files.sort((a, b) => collator.compare(a.basename, b.basename));
 

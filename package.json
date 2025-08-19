@@ -10,6 +10,7 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"lint": "eslint . --ext .ts,.tsx,.js,.jsx",
 		"lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+		"lint:ci": "eslint . --ext .ts,.tsx,.js,.jsx --max-warnings 100 --no-error-on-unmatched-pattern",
 		"format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
 		"format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
 		"type-check": "tsc --noEmit --skipLibCheck",

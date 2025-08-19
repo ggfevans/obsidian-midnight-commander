@@ -4,7 +4,7 @@ export enum NotificationType {
 	SUCCESS = 'success',
 	ERROR = 'error',
 	WARNING = 'warning',
-	INFO = 'info'
+	INFO = 'info',
 }
 
 export interface NotificationOptions {
@@ -21,21 +21,32 @@ export class NotificationManager {
 	 * Show a success notification
 	 */
 	static success(message: string, options: NotificationOptions = {}): void {
-		this.showNotification(message, { ...options, type: NotificationType.SUCCESS });
+		this.showNotification(message, {
+			...options,
+			type: NotificationType.SUCCESS,
+		});
 	}
 
 	/**
 	 * Show an error notification
 	 */
 	static error(message: string, options: NotificationOptions = {}): void {
-		this.showNotification(message, { ...options, type: NotificationType.ERROR, duration: 8000 });
+		this.showNotification(message, {
+			...options,
+			type: NotificationType.ERROR,
+			duration: 8000,
+		});
 	}
 
 	/**
 	 * Show a warning notification
 	 */
 	static warning(message: string, options: NotificationOptions = {}): void {
-		this.showNotification(message, { ...options, type: NotificationType.WARNING, duration: 6000 });
+		this.showNotification(message, {
+			...options,
+			type: NotificationType.WARNING,
+			duration: 6000,
+		});
 	}
 
 	/**
@@ -50,7 +61,7 @@ export class NotificationManager {
 	 */
 	static progress(message: string, progress?: number): NotificationProgress {
 		const notice = new Notice('', 0); // Persistent notice
-		
+
 		const updateProgress = (newMessage: string, newProgress?: number) => {
 			let displayMessage = newMessage;
 			if (newProgress !== undefined) {
@@ -65,7 +76,7 @@ export class NotificationManager {
 		return {
 			update: updateProgress,
 			hide: () => notice.hide(),
-			setMessage: (msg: string) => notice.setMessage(msg)
+			setMessage: (msg: string) => notice.setMessage(msg),
 		};
 	}
 
@@ -73,12 +84,12 @@ export class NotificationManager {
 	 * Show confirmation dialog with custom actions
 	 */
 	static async confirm(
-		message: string, 
-		title: string = 'Confirm',
-		confirmText: string = 'Confirm',
-		cancelText: string = 'Cancel'
+		message: string,
+		title = 'Confirm',
+		confirmText = 'Confirm',
+		cancelText = 'Cancel'
 	): Promise<boolean> {
-		return new Promise((resolve) => {
+		return new Promise(resolve => {
 			const modal = document.createElement('div');
 			modal.style.cssText = `
 				position: fixed;
@@ -92,7 +103,7 @@ export class NotificationManager {
 				align-items: center;
 				justify-content: center;
 			`;
-			
+
 			const dialog = modal.createDiv();
 			dialog.style.cssText = `
 				background: var(--background-primary);
@@ -102,35 +113,42 @@ export class NotificationManager {
 				max-width: 400px;
 				min-width: 300px;
 			`;
-			
+
 			dialog.createEl('h3', { text: title });
 			dialog.createEl('p', { text: message });
-			
+
 			const buttonContainer = dialog.createDiv();
-			buttonContainer.style.cssText = 'display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;';
-			
-			const cancelBtn = buttonContainer.createEl('button', { text: cancelText });
-			cancelBtn.style.cssText = 'padding: 8px 16px; background: var(--background-modifier-border); border: none; border-radius: 3px; cursor: pointer;';
+			buttonContainer.style.cssText =
+				'display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;';
+
+			const cancelBtn = buttonContainer.createEl('button', {
+				text: cancelText,
+			});
+			cancelBtn.style.cssText =
+				'padding: 8px 16px; background: var(--background-modifier-border); border: none; border-radius: 3px; cursor: pointer;';
 			cancelBtn.onclick = () => {
 				document.body.removeChild(modal);
 				resolve(false);
 			};
-			
-			const confirmBtn = buttonContainer.createEl('button', { text: confirmText });
-			confirmBtn.style.cssText = 'padding: 8px 16px; background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer;';
+
+			const confirmBtn = buttonContainer.createEl('button', {
+				text: confirmText,
+			});
+			confirmBtn.style.cssText =
+				'padding: 8px 16px; background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer;';
 			confirmBtn.onclick = () => {
 				document.body.removeChild(modal);
 				resolve(true);
 			};
-			
+
 			// Close on background click
-			modal.onclick = (e) => {
+			modal.onclick = e => {
 				if (e.target === modal) {
 					document.body.removeChild(modal);
 					resolve(false);
 				}
 			};
-			
+
 			// Handle Escape key
 			const keyHandler = (e: KeyboardEvent) => {
 				if (e.key === 'Escape') {
@@ -144,7 +162,7 @@ export class NotificationManager {
 				}
 			};
 			document.addEventListener('keydown', keyHandler);
-			
+
 			document.body.appendChild(modal);
 			confirmBtn.focus();
 		});
@@ -153,13 +171,13 @@ export class NotificationManager {
 	/**
 	 * Show status message in a persistent status bar
 	 */
-	static showStatus(message: string, duration: number = 3000): void {
+	static showStatus(message: string, duration = 3000): void {
 		const statusBar = document.querySelector('.status-bar') as HTMLElement;
 		if (!statusBar) return;
 
-		const statusItem = statusBar.createEl('div', { 
+		const statusItem = statusBar.createEl('div', {
 			text: message,
-			cls: 'mc-status-item'
+			cls: 'mc-status-item',
 		});
 		statusItem.style.cssText = `
 			background: var(--background-modifier-success);
@@ -180,20 +198,23 @@ export class NotificationManager {
 	/**
 	 * Private method to show a notification with consistent styling
 	 */
-	private static showNotification(message: string, options: NotificationOptions): void {
+	private static showNotification(
+		message: string,
+		options: NotificationOptions
+	): void {
 		const { duration = 4000, type = NotificationType.INFO, title } = options;
-		
+
 		let displayMessage = message;
 		if (title) {
 			displayMessage = `${title}: ${message}`;
 		}
 
 		const notice = new Notice(displayMessage, duration);
-		
+
 		// Add custom styling based on type
 		if (notice.noticeEl) {
 			notice.noticeEl.addClass(`mc-notification-${type}`);
-			
+
 			// Add custom CSS if needed
 			switch (type) {
 				case NotificationType.SUCCESS:
@@ -219,7 +240,7 @@ export class NotificationManager {
 		const totalWidth = 20;
 		const filledWidth = Math.round((progress / 100) * totalWidth);
 		const emptyWidth = totalWidth - filledWidth;
-		
+
 		return `[${'█'.repeat(filledWidth)}${'░'.repeat(emptyWidth)}]`;
 	}
 }
@@ -234,25 +255,31 @@ export interface NotificationProgress {
  * Decorator for automatic error handling
  */
 export function withErrorHandling(
-	errorMessage: string = 'An error occurred',
-	showSuccess: boolean = false,
+	errorMessage = 'An error occurred',
+	showSuccess = false,
 	successMessage?: string
 ) {
-	return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+	return function (
+		target: any,
+		propertyKey: string,
+		descriptor: PropertyDescriptor
+	) {
 		const originalMethod = descriptor.value;
 
 		descriptor.value = async function (...args: any[]) {
 			try {
 				const result = await originalMethod.apply(this, args);
-				
+
 				if (showSuccess && successMessage) {
 					NotificationManager.success(successMessage);
 				}
-				
+
 				return result;
 			} catch (error) {
 				console.error(`Error in ${propertyKey}:`, error);
-				NotificationManager.error(`${errorMessage}: ${error.message || 'Unknown error'}`);
+				NotificationManager.error(
+					`${errorMessage}: ${error.message || 'Unknown error'}`
+				);
 				throw error;
 			}
 		};
@@ -277,7 +304,7 @@ export async function withNotification<T>(
 		errorMessage = 'Operation failed',
 		successMessage,
 		showProgress = false,
-		progressMessage = 'Processing...'
+		progressMessage = 'Processing...',
 	} = options;
 
 	let progressNotification: NotificationProgress | null = null;
@@ -304,7 +331,9 @@ export async function withNotification<T>(
 		}
 
 		console.error('Operation failed:', error);
-		NotificationManager.error(`${errorMessage}: ${error.message || 'Unknown error'}`);
+		NotificationManager.error(
+			`${errorMessage}: ${error.message || 'Unknown error'}`
+		);
 		throw error;
 	}
 }
