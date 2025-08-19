@@ -102,15 +102,6 @@ Access settings through Obsidian's Settings → Community plugins → Midnight C
 2. Extract the files to your vault's plugins folder: `VaultFolder/.obsidian/plugins/obsidian-midnight-commander/`
 3. Reload Obsidian and enable the plugin in Settings
 
-## Credits & Acknowledgements
-
-This plugin draws inspiration and technical insights from several outstanding projects:
-
-- The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach that serves as the foundation of this plugin.
-
-- [Quick Explorer](https://github.com/pjeby/quick-explorer) by PJ Eby - An exceptional file navigation plugin that provides breadcrumb navigation and keyboard-driven menus. Our keyboard navigation and file traversal systems draw significant inspiration from Quick Explorer's excellent implementation.
-
-- [File Tree Alternative](https://github.com/ozntel/file-tree-alternative) by Ozan Tellioglu - A brilliant React-based file tree plugin showcasing excellent state management with Recoil and modern React patterns. Their implementation provided valuable insights for our React component architecture and state management approach.
 
 ## 🛠 Development
 
@@ -166,3 +157,11 @@ For security vulnerabilities, please see our [Security Policy](SECURITY.md).
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
+
+This plugin draws inspiration and technical insights from several outstanding projects:
+
+- The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach that serves as the foundation of this plugin.
+
+- [Quick Explorer](https://github.com/pjeby/quick-explorer) by PJ Eby - An exceptional file navigation plugin that provides breadcrumb navigation and keyboard-driven menus. Our keyboard navigation and file traversal systems draw significant inspiration from Quick Explorer's excellent implementation.
+
+- [File Tree Alternative](https://github.com/ozntel/file-tree-alternative) by Ozan Tellioglu - A brilliant React-based file tree plugin showcasing excellent state management with Recoil and modern React patterns. Their implementation provided valuable insights for our React component architecture and state management approach.
