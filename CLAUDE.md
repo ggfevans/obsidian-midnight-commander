@@ -1,0 +1,1 @@
+- our TODO list for the project is in D:\gevans\notes\gVault\01-PROJECTS\obsidian-midnight-commander\TODO.md

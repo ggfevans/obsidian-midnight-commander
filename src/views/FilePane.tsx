@@ -3,7 +3,7 @@ import { TAbstractFile, TFolder, TFile } from 'obsidian';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { FilePaneProps } from '../types/interfaces';
 import { FileItem } from './FileItem';
-import { Breadcrumb } from '../components/Breadcrumb';
+import { BreadcrumbNavigation } from '../components/BreadcrumbNavigation';
 
 export const FilePane: React.FC<FilePaneProps> = ({
 	paneState,
@@ -141,9 +141,10 @@ export const FilePane: React.FC<FilePaneProps> = ({
 			{/* Individual pane header */}
 			<div className="pane-header">
 				<div className="pane-path">
-					<Breadcrumb 
+					<BreadcrumbNavigation 
 						currentFolder={paneState.currentFolder}
-						onNavigate={onNavigateToFolder}
+						onNavigateToFolder={onNavigateToFolder}
+						isActive={paneState.isActive}
 					/>
 					<span className="pane-file-count">
 						({files.length} item{files.length !== 1 ? 's' : ''})

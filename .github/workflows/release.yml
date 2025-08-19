@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build-and-release:
+    name: Build and Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run all checks
+        run: |
+          npm run lint
+          npm run format:check
+          npx tsc --noEmit --skipLibCheck
+          
+      - name: Build plugin
+        run: npm run build
+        
+      - name: Verify build files
+        run: |
+          if [[ ! -f "main.js" ]]; then
+            echo "❌ main.js not found"
+            exit 1
+          fi
+          if [[ ! -f "manifest.json" ]]; then
+            echo "❌ manifest.json not found"
+            exit 1
+          fi
+          if [[ ! -f "styles.css" ]]; then
+            echo "❌ styles.css not found"
+            exit 1
+          fi
+          echo "✅ All build files present"
+          
+      - name: Get version from tag
+        id: get_version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        
+      - name: Verify version consistency
+        run: |
+          TAG_VERSION="${{ steps.get_version.outputs.VERSION }}"
+          MANIFEST_VERSION=$(jq -r '.version' manifest.json)
+          PACKAGE_VERSION=$(jq -r '.version' package.json)
+          
+          if [[ "$TAG_VERSION" != "$MANIFEST_VERSION" ]]; then
+            echo "❌ Tag version ($TAG_VERSION) doesn't match manifest.json version ($MANIFEST_VERSION)"
+            exit 1
+          fi
+          
+          if [[ "$TAG_VERSION" != "$PACKAGE_VERSION" ]]; then
+            echo "❌ Tag version ($TAG_VERSION) doesn't match package.json version ($PACKAGE_VERSION)"
+            exit 1
+          fi
+          
+          echo "✅ Version consistency verified: $TAG_VERSION"
+          
+      - name: Create release archive
+        run: |
+          mkdir release-files
+          cp main.js manifest.json styles.css release-files/
+          cd release-files
+          zip -r "../obsidian-midnight-commander-${{ steps.get_version.outputs.VERSION }}.zip" .
+          cd ..
+          
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          
+          # Extract changelog section for this version
+          if [[ -f "CHANGELOG.md" ]]; then
+            NOTES=$(awk "/## \[$VERSION\]/{flag=1; next} /## \[/{flag=0} flag" CHANGELOG.md)
+            if [[ -n "$NOTES" ]]; then
+              echo "RELEASE_NOTES<<EOF" >> $GITHUB_OUTPUT
+              echo "$NOTES" >> $GITHUB_OUTPUT
+              echo "EOF" >> $GITHUB_OUTPUT
+            else
+              echo "RELEASE_NOTES=Release $VERSION" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "RELEASE_NOTES=Release $VERSION" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.VERSION }}
+          body: ${{ steps.release_notes.outputs.RELEASE_NOTES }}
+          files: |
+            obsidian-midnight-commander-${{ steps.get_version.outputs.VERSION }}.zip
+            main.js
+            manifest.json
+            styles.css
+          draft: false
+          prerelease: ${{ contains(steps.get_version.outputs.VERSION, '-') }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update versions.json
+        run: |
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          MIN_APP_VERSION=$(jq -r '.minAppVersion' manifest.json)
+          
+          # Update versions.json
+          if [[ -f "versions.json" ]]; then
+            jq --arg version "$VERSION" --arg minAppVersion "$MIN_APP_VERSION" \
+               '. + {($version): $minAppVersion}' versions.json > versions.json.tmp
+            mv versions.json.tmp versions.json
+          else
+            jq -n --arg version "$VERSION" --arg minAppVersion "$MIN_APP_VERSION" \
+               '{($version): $minAppVersion}' > versions.json
+          fi
+          
+      - name: Commit updated versions.json
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add versions.json
+          git diff --staged --quiet || git commit -m "Update versions.json for release ${{ steps.get_version.outputs.VERSION }}"
+          git push origin HEAD:main || true
+          
+  notify-success:
+    name: Notify Release Success
+    runs-on: ubuntu-latest
+    needs: [build-and-release]
+    if: success()
+    
+    steps:
+      - name: Release Success
+        run: |
+          echo "🎉 Release ${{ github.ref_name }} completed successfully!"
+          echo "📦 Plugin is now available for download"
+          
+  notify-failure:
+    name: Notify Release Failure  
+    runs-on: ubuntu-latest
+    needs: [build-and-release]
+    if: failure()
+    
+    steps:
+      - name: Release Failed
+        run: |
+          echo "❌ Release ${{ github.ref_name }} failed!"
+          echo "Please check the logs and try again"
+          exit 1

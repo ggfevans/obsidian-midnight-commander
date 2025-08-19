@@ -1,0 +1,121 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+title: "[FEATURE] "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide as much detail as possible to help us understand your request.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I have searched existing issues for similar requests
+          required: true
+        - label: I have reviewed the documentation and feature list
+          required: true
+        - label: This feature would benefit the broader Obsidian community
+          required: false
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or Use Case
+      description: What problem would this feature solve? What use case does it address?
+      placeholder: |
+        I'm always frustrated when...
+        I need to be able to...
+        Currently there's no way to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature you'd like to see implemented
+      placeholder: |
+        I would like the plugin to...
+        This feature should work by...
+        When I [action], it should [result]...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative Solutions
+      description: Are there any alternative solutions or workarounds you've considered?
+      placeholder: |
+        I've considered...
+        Another approach might be...
+        Currently I work around this by...
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level
+      description: How important is this feature to your workflow?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve my workflow
+        - High - Essential for my use case
+        - Critical - Blocking my productivity
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Estimated Complexity
+      description: How complex do you think this feature would be to implement?
+      options:
+        - Simple - Small UI change or setting
+        - Medium - New component or moderate functionality
+        - Complex - Major feature requiring significant changes
+        - Unknown - Not sure about implementation complexity
+
+  - type: textarea
+    id: mockups
+    attributes:
+      label: Mockups or Examples
+      description: |
+        If applicable, add screenshots, mockups, or examples to help explain your feature request.
+        You can drag and drop images here or link to external resources.
+      placeholder: |
+        Screenshots, wireframes, or links to similar features in other applications...
+
+  - type: textarea
+    id: implementation_ideas
+    attributes:
+      label: Implementation Ideas
+      description: |
+        Do you have any ideas about how this could be implemented?
+        Any technical considerations or constraints to keep in mind?
+      placeholder: |
+        This could work by...
+        It might integrate with...
+        Technical considerations...
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution Interest
+      description: Would you be interested in contributing to this feature?
+      options:
+        - label: I would like to help implement this feature
+        - label: I can provide testing and feedback
+        - label: I can help with documentation
+        - label: I can provide design/UX input
+
+  - type: textarea
+    id: additional_context
+    attributes:
+      label: Additional Context
+      description: |
+        Add any other context or information about the feature request:
+        - Related features or plugins
+        - External resources or references
+        - Timeline considerations
+      placeholder: Any additional information...
