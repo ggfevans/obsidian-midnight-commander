@@ -8,10 +8,17 @@
 		"build-dev": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs development",
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
-		"lint": "eslint main.ts --ext .ts",
-		"lint:fix": "eslint main.ts --ext .ts --fix",
-		"format": "prettier --write *.ts *.js *.json *.md",
-		"format:check": "prettier --check *.ts *.js *.json *.md"
+		"lint": "eslint . --ext .ts,.tsx,.js,.jsx",
+		"lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
+		"format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+		"format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+		"type-check": "tsc --noEmit --skipLibCheck",
+		"pre-commit": "npm run lint && npm run format:check && npm run type-check",
+		"prepare": "husky install",
+		"test": "echo \"Tests will be implemented in future updates\" && exit 0",
+		"audit-fix": "npm audit fix",
+		"clean": "rm -rf node_modules package-lock.json && npm install",
+		"release": "npm run build && npm version patch && git push origin main --tags"
 	},
 	"keywords": [
 		"obsidian",
@@ -28,9 +35,12 @@
 		"@types/react-dom": "^18.3.7",
 		"@typescript-eslint/eslint-plugin": "5.29.0",
 		"@typescript-eslint/parser": "5.29.0",
+		"audit-ci": "^7.0.1",
 		"builtin-modules": "3.3.0",
 		"esbuild": "0.25.0",
 		"eslint": "^8.57.0",
+		"husky": "^8.0.3",
+		"lint-staged": "^15.2.0",
 		"obsidian": "latest",
 		"prettier": "^3.0.0",
 		"tslib": "2.4.0",
@@ -42,5 +52,14 @@
 		"react": "^18.3.1",
 		"react-dom": "^18.3.1",
 		"recoil": "^0.7.7"
+	},
+	"lint-staged": {
+		"*.{ts,tsx,js,jsx}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{json,md,css}": [
+			"prettier --write"
+		]
 	}
 }

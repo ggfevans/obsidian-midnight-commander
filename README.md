@@ -37,7 +37,9 @@ A powerful dual-pane file manager for Obsidian inspired by the classic Midnight 
 
 ### Keyboard-Centric Design
 - **F-key operations**: F5 (copy), F6 (move), F7 (new folder), F8 (delete)
-- **Multi-select support**: Space to toggle, Ctrl+A/D for select/deselect all
+- **Advanced selection**: Shift+Click for range selection, Ctrl+Click for individual toggle
+- **Keyboard range selection**: Shift+↑/↓ arrows to extend selection, Space to toggle individual files
+- **Multi-select operations**: Ctrl+A/D for select/deselect all, Ctrl+Shift+I to invert selection
 - **Navigation shortcuts**: Ctrl+↑/↓ for file navigation, Ctrl+Shift+↑/↓ for first/last
 - **Context menus**: \\ key for keyboard-accessible context operations
 
@@ -99,4 +101,53 @@ This plugin draws inspiration and technical insights from several outstanding pr
 - [Quick Explorer](https://github.com/pjeby/quick-explorer) by PJ Eby - An exceptional file navigation plugin that provides breadcrumb navigation and keyboard-driven menus. Our keyboard navigation and file traversal systems draw significant inspiration from Quick Explorer's excellent implementation.
 
 - The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach.
+
+## 🛠 Development
+
+### Quick Start
+```bash
+# Clone the repository
+git clone https://github.com/ggfevans/obsidian-midnight-commander.git
+cd obsidian-midnight-commander
+
+# Install dependencies
+npm install
+
+# Start development build
+npm run dev
+```
+
+### Available Scripts
+- `npm run dev` - Development build with watch mode
+- `npm run build` - Production build
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier  
+- `npm run type-check` - TypeScript type checking
+- `npm run pre-commit` - Run all pre-commit checks
+
+### Code Quality
+This project maintains high code quality standards:
+- **TypeScript** for type safety
+- **ESLint** for code linting
+- **Prettier** for code formatting
+- **Husky** for pre-commit hooks
+- **Conventional commits** for commit message format
+- **GitHub Actions** for CI/CD
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+- Development setup
+- Coding standards  
+- Pull request process
+- Issue reporting
+
+### Security
+For security vulnerabilities, please see our [Security Policy](SECURITY.md).
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
 

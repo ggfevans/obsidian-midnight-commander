@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 General Discussion
+    url: https://github.com/ggfevans/obsidian-midnight-commander/discussions
+    about: Ask questions, share ideas, or discuss the plugin with the community
+  - name: 📚 Documentation
+    url: https://github.com/ggfevans/obsidian-midnight-commander/blob/main/README.md
+    about: Check the documentation for usage instructions and troubleshooting
+  - name: 🔒 Security Issue
+    url: https://github.com/ggfevans/obsidian-midnight-commander/security/advisories/new
+    about: Report security vulnerabilities privately
