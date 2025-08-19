@@ -1,4 +1,12 @@
 import { App, TAbstractFile, TFolder, TFile, Notice, Modal } from 'obsidian';
+
+// Module augmentation to access FileManager's private prompt methods
+declare module "obsidian" {
+    interface FileManager {
+        promptForFolderDeletion(folder: TFolder): void;
+        promptForFileDeletion(file: TFile): void;
+    }
+}
 import { FileCache } from '../utils/FileCache';
 import { BatchOperations, runInBatch } from '../utils/BatchOperations';
 import { NotificationManager, withNotification, withErrorHandling } from '../utils/NotificationManager';
@@ -86,53 +94,24 @@ export class FileOperations {
     }
 
     /**
-     * Delete files with confirmation using batch operations
+     * Delete files using Obsidian's FileManager prompt methods
      */
     async deleteFiles(files: TAbstractFile[]): Promise<void> {
         if (files.length === 0) {
-            NotificationManager.warning('No files selected for deletion');
             return;
         }
 
-        // Use standard Obsidian modal for confirmation
-        const confirmed = await this.confirmDeletion(files);
-        
-        if (!confirmed) {
-            NotificationManager.info('Deletion cancelled');
-            return;
-        }
-
-        return await withNotification(
-            this.executeDeleteOperation(files),
-            {
-                errorMessage: 'Failed to delete files',
-                successMessage: `Successfully deleted ${files.length} item(s)`,
-                showProgress: files.length > 5,
-                progressMessage: `Deleting ${files.length} files...`
+        // Use FileManager's prompt methods which handle confirmation dialogs
+        // and respect user preferences automatically
+        for (const file of files) {
+            if (file instanceof TFile) {
+                await this.app.fileManager.promptForFileDeletion(file);
+            } else if (file instanceof TFolder) {
+                await this.app.fileManager.promptForFolderDeletion(file);
             }
-        );
-    }
-
-    private async executeDeleteOperation(files: TAbstractFile[]): Promise<void> {
-        console.time(`[FileOperations] Delete ${files.length} files`);
-        console.log(`[FileOperations] Starting batch deletion of ${files.length} files`);
-
-        try {
-            // Use batch operations for better performance with metadata cache optimization
-            await runInBatch(this.app, files.map(file => 
-                (batch: BatchOperations) => {
-                    // Note: FileManager.trashFile is safer for TFiles, but we need custom operations for folders
-                    if (file instanceof TFile) {
-                        batch.addCustomOperation(() => this.app.fileManager.trashFile(file));
-                    } else if (file instanceof TFolder) {
-                        batch.addDeleteOperation(file);
-                    }
-                }
-            ));
-        } finally {
-            console.timeEnd(`[FileOperations] Delete ${files.length} files`);
         }
     }
+
 
     /**
      * Create a new folder
@@ -295,37 +274,6 @@ export class FileOperations {
         return targetPath;
     }
 
-    private async confirmDeletion(files: TAbstractFile[]): Promise<boolean> {
-        // Generate a detailed message for the confirmation dialog
-        let message: string;
-        if (files.length === 1) {
-            const file = files[0];
-            const type = file instanceof TFolder ? 'folder' : 'file';
-            message = `Are you sure you want to delete the ${type} "${file.name}"?`;
-        } else {
-            // Show up to 5 file names, then summarize the rest
-            const maxDisplayItems = 5;
-            const displayFiles = files.slice(0, maxDisplayItems).map(f => `• ${f.name}`).join('\n');
-            const remainingCount = files.length - maxDisplayItems;
-            
-            message = `Are you sure you want to delete ${files.length} items?\n\n${displayFiles}`;
-            if (remainingCount > 0) {
-                message += `\n... and ${remainingCount} more`;
-            }
-        }
-
-        return new Promise((resolve) => {
-            const modal = new ConfirmationModal(
-                this.app,
-                'Confirm Deletion',
-                message,
-                'Delete',
-                'Cancel',
-                (result) => resolve(result)
-            );
-            modal.open();
-        });
-    }
 
     private async promptForName(message: string, defaultValue: string = ''): Promise<string | null> {
         return new Promise((resolve) => {
@@ -477,77 +425,3 @@ class TextInputModal extends Modal {
     }
 }
 
-class ConfirmationModal extends Modal {
-    constructor(
-        app: App,
-        private title: string,
-        private message: string,
-        private confirmText: string,
-        private cancelText: string,
-        private callback: (result: boolean) => void
-    ) {
-        super(app);
-    }
-
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-        contentEl.addClass('midnight-commander-confirmation-modal');
-
-        // Title
-        contentEl.createEl('h2', { text: this.title });
-        
-        // Message with support for multiline text
-        const messageLines = this.message.split('\n');
-        const messageContainer = contentEl.createDiv({ cls: 'modal-message' });
-        messageLines.forEach(line => {
-            if (line.trim()) {
-                messageContainer.createEl('div', { text: line, cls: 'modal-message-line' });
-            }
-        });
-
-        // Button container with standard Obsidian modal styling
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        
-        // Cancel button first (standard Obsidian pattern)
-        const cancelButton = buttonContainer.createEl('button', { 
-            text: this.cancelText,
-            cls: 'mod-cancel'
-        });
-        cancelButton.addEventListener('click', () => {
-            this.close();
-            this.callback(false);
-        });
-
-        // Confirm button with warning styling
-        const confirmButton = buttonContainer.createEl('button', { 
-            text: this.confirmText,
-            cls: 'mod-warning'
-        });
-        confirmButton.addEventListener('click', () => {
-            this.close();
-            this.callback(true);
-        });
-
-        // Focus cancel button by default for safety
-        cancelButton.focus();
-
-        // Handle Enter key for confirm and Escape for cancel
-        this.scope.register([], 'Enter', () => {
-            this.close();
-            this.callback(true);
-            return false;
-        });
-
-        this.scope.register([], 'Escape', () => {
-            this.close();
-            this.callback(false);
-            return false;
-        });
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}
