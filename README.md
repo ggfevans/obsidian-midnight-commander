@@ -5,12 +5,14 @@ A powerful dual-pane file manager for Obsidian inspired by the classic Midnight 
 ## Features
 
 ### Core Dual-Pane Interface
+
 - **Dual-pane interface**: Navigate files with two independent panes
 - **Smart pane management**: Visual indicators for active pane with accent colors
 - **Responsive layouts**: Automatically adapts to different workspace orientations
 - **Virtual scrolling**: Efficient handling of large directories
 
 ### Advanced Navigation (Quick Explorer Integration)
+
 - **PopupMenu system**: Keyboard-navigable menus with vim-style bindings (hjkl, gg, G)
 - **Incremental fuzzy search**: Real-time search with highlighting using Fuse.js
 - **Folder navigation menu (F9)**: Quick Explorer-style folder browsing with auto-preview
@@ -18,17 +20,20 @@ A powerful dual-pane file manager for Obsidian inspired by the classic Midnight 
 - **File navigation commands**: Jump to next/previous/first/last files across folders
 
 ### Auto-Preview & Context Menus
+
 - **Auto-preview with hover editors**: File content preview on navigation with configurable delays
 - **Comprehensive context menus**: Right-click and keyboard (\\) context menus
 - **Cascade positioning**: Smart menu placement that respects viewport boundaries
 - **File operations**: Copy, move, rename, delete with confirmation dialogs
 
 ### Breadcrumb Navigation
+
 - **Interactive breadcrumbs**: Click to navigate to parent directories
 - **Path visualization**: Clear visual hierarchy of current location
 - **Configurable alignment**: Center or left-align breadcrumbs per preference
 
 ### Theme Integration & Polish
+
 - **Native Obsidian styling**: Seamless integration with all themes
 - **CSS variable mapping**: Automatic adaptation to theme color schemes
 - **High-DPI optimizations**: Crisp rendering on retina displays
@@ -36,6 +41,7 @@ A powerful dual-pane file manager for Obsidian inspired by the classic Midnight 
 - **Popular theme compatibility**: Tested with Minimal, Things, Catppuccin, Nord themes
 
 ### Keyboard-Centric Design
+
 - **F-key operations**: F5 (copy), F6 (move), F7 (new folder), F8 (delete)
 - **Advanced selection**: Shift+Click for range selection, Ctrl+Click for individual toggle
 - **Keyboard range selection**: Shift+↑/↓ arrows to extend selection, Space to toggle individual files
@@ -44,6 +50,7 @@ A powerful dual-pane file manager for Obsidian inspired by the classic Midnight 
 - **Context menus**: \\ key for keyboard-accessible context operations
 
 ### Modern Architecture
+
 - **React 18**: Modern, responsive interface with hooks and concurrent features
 - **TypeScript**: Full type safety and excellent developer experience
 - **Component-based**: Modular, testable, and maintainable codebase
@@ -52,6 +59,7 @@ A powerful dual-pane file manager for Obsidian inspired by the classic Midnight 
 ## Usage
 
 Once installed, access Midnight Commander through:
+
 - **Command palette**: Press `Ctrl+P` (or `Cmd+P` on Mac) and search for "Midnight Commander"
 - **Ribbon icon**: Click the dual-pane icon in the left sidebar
 - **View menu**: Open from the View menu under "Midnight Commander"
@@ -98,13 +106,16 @@ Access settings through Obsidian's Settings → Community plugins → Midnight C
 
 This plugin draws inspiration and technical insights from several outstanding projects:
 
+- The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach that serves as the foundation of this plugin.
+
 - [Quick Explorer](https://github.com/pjeby/quick-explorer) by PJ Eby - An exceptional file navigation plugin that provides breadcrumb navigation and keyboard-driven menus. Our keyboard navigation and file traversal systems draw significant inspiration from Quick Explorer's excellent implementation.
 
-- The classic [Midnight Commander](https://midnight-commander.org/) file manager - For the original dual-pane design pattern and keyboard-centric approach.
+- [File Tree Alternative](https://github.com/ozntel/file-tree-alternative) by Ozan Tellioglu - A brilliant React-based file tree plugin showcasing excellent state management with Recoil and modern React patterns. Their implementation provided valuable insights for our React component architecture and state management approach.
 
 ## 🛠 Development
 
 ### Quick Start
+
 ```bash
 # Clone the repository
 git clone https://github.com/ggfevans/obsidian-midnight-commander.git
@@ -118,15 +129,18 @@ npm run dev
 ```
 
 ### Available Scripts
+
 - `npm run dev` - Development build with watch mode
 - `npm run build` - Production build
 - `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier  
+- `npm run format` - Format code with Prettier
 - `npm run type-check` - TypeScript type checking
 - `npm run pre-commit` - Run all pre-commit checks
 
 ### Code Quality
+
 This project maintains high code quality standards:
+
 - **TypeScript** for type safety
 - **ESLint** for code linting
 - **Prettier** for code formatting
@@ -137,12 +151,14 @@ This project maintains high code quality standards:
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
 - Development setup
-- Coding standards  
+- Coding standards
 - Pull request process
 - Issue reporting
 
 ### Security
+
 For security vulnerabilities, please see our [Security Policy](SECURITY.md).
 
 ## 📄 License
@@ -150,4 +166,3 @@ For security vulnerabilities, please see our [Security Policy](SECURITY.md).
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
-
