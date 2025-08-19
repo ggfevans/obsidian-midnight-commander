@@ -5,6 +5,7 @@ declare module 'obsidian' {
 	interface FileManager {
 		promptForFolderDeletion(folder: TFolder): void;
 		promptForFileDeletion(file: TFile): void;
+		generateMarkdownLink(file: TFile, sourcePath?: string, subpath?: string, alias?: string): string;
 	}
 }
 import { FileCache } from '../utils/FileCache';
@@ -381,6 +382,50 @@ export class FileOperations {
 		}
 
 		return await this.app.vault.create(finalPath, content);
+	}
+
+	/**
+	 * Generate a markdown link for a file using FileManager
+	 */
+	generateMarkdownLink(file: TFile, sourcePath?: string, alias?: string): string {
+		try {
+			// Use FileManager's generateMarkdownLink method which respects user preferences
+			return this.app.fileManager.generateMarkdownLink(file, sourcePath, '', alias);
+		} catch (error) {
+			console.warn('FileManager.generateMarkdownLink not available, falling back to manual link creation:', error);
+			// Fallback to manual link creation if the method doesn't exist
+			return this.createFallbackMarkdownLink(file, alias);
+		}
+	}
+
+	/**
+	 * Fallback method for creating markdown links when FileManager method is not available
+	 */
+	private createFallbackMarkdownLink(file: TFile, alias?: string): string {
+		const displayName = alias || file.basename;
+		const extension = file.extension.toLowerCase();
+		
+		// For markdown files, use wiki-style links by default
+		if (extension === 'md') {
+			return `[[${file.path}|${displayName}]]`;
+		}
+		
+		// For other files, use regular markdown links
+		return `[${displayName}](${encodeURI(file.path)})`;
+	}
+
+	/**
+	 * Copy markdown link to clipboard
+	 */
+	async copyMarkdownLink(file: TFile, sourcePath?: string, alias?: string): Promise<void> {
+		try {
+			const link = this.generateMarkdownLink(file, sourcePath, alias);
+			await navigator.clipboard.writeText(link);
+			new Notice(`Copied link: ${link}`);
+		} catch (error) {
+			console.error('Failed to copy link to clipboard:', error);
+			new Notice('Failed to copy link to clipboard', 3000);
+		}
 	}
 
 	/**

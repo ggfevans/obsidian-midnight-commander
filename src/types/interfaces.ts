@@ -4,10 +4,10 @@ export interface MidnightCommanderSettings {
 	// View settings
 	showHiddenFiles: boolean;
 	openViewOnStart: boolean;
-	
+
 	// Keyboard settings
 	vimBindings: boolean;
-	
+
 	// UI settings
 	showFileIcons: boolean;
 	activePane: 'left' | 'right';
@@ -16,9 +16,17 @@ export interface MidnightCommanderSettings {
 	previewDelay: number;
 	keymapProfile: 'default' | 'vim';
 	centerBreadcrumbs: boolean;
-	
+
 	// Enhanced keyboard shortcuts settings
 	bookmarks?: BookmarkItem[];
+
+	// Theme and appearance settings
+	theme: string;
+	customCssOverrides?: string;
+	colorScheme?: 'auto' | 'light' | 'dark';
+	fontSize?: 'small' | 'medium' | 'large';
+	fontFamily?: string;
+	compactMode?: boolean;
 }
 
 export interface BookmarkItem {
@@ -34,6 +42,7 @@ export interface PaneState {
 	selectedFiles: Set<string>;
 	isActive: boolean;
 	lastClickedIndex?: number; // Track anchor point for range selection
+	filter?: FilterState; // Optional filter state
 }
 
 export interface FileClickOptions {
@@ -54,18 +63,38 @@ export interface DualPaneManagerProps {
 	app: App;
 	leftPane: PaneState;
 	rightPane: PaneState;
-	onPaneStateChange: (paneId: 'left' | 'right', newState: Partial<PaneState>) => void;
-	onFileClick: (file: TAbstractFile, paneId: 'left' | 'right', options?: any) => void;
-	onFileContextMenu: (file: TAbstractFile, paneId: 'left' | 'right', position: any) => void;
+	onPaneStateChange: (
+		paneId: 'left' | 'right',
+		newState: Partial<PaneState>
+	) => void;
+	onFileClick: (
+		file: TAbstractFile,
+		paneId: 'left' | 'right',
+		options?: any
+	) => void;
+	onFileContextMenu: (
+		file: TAbstractFile,
+		paneId: 'left' | 'right',
+		position: any
+	) => void;
 	onNavigateToFolder: (folder: TFolder, paneId: 'left' | 'right') => void;
+	onFilterChange?: (paneId: 'left' | 'right', options: FilterOptions) => void;
+	onFilterToggle?: (paneId: 'left' | 'right', isActive: boolean) => void;
+	onFilterClear?: (paneId: 'left' | 'right') => void;
 }
 
 export interface FilePaneProps {
 	paneState: PaneState;
 	onStateChange: (newState: Partial<PaneState>) => void;
 	onFileClick: (file: TAbstractFile, options?: FileClickOptions) => void;
-	onFileContextMenu: (file: TAbstractFile, position: ContextMenuPosition) => void;
+	onFileContextMenu: (
+		file: TAbstractFile,
+		position: ContextMenuPosition
+	) => void;
 	onNavigateToFolder: (folder: TFolder) => void;
+	onFilterChange?: (options: FilterOptions) => void;
+	onFilterToggle?: (isActive: boolean) => void;
+	onFilterClear?: () => void;
 }
 
 export interface FileItemProps {
@@ -75,4 +104,48 @@ export interface FileItemProps {
 	onClick: (file: TAbstractFile, event: React.MouseEvent) => void;
 	onContextMenu: (file: TAbstractFile, event: React.MouseEvent) => void;
 	onDoubleClick: (file: TAbstractFile, event: React.MouseEvent) => void;
+}
+
+// Theme system interfaces
+export interface MCTheme {
+	id: string;
+	name: string;
+	description: string;
+	type: 'built-in' | 'custom';
+	cssVariables: Record<string, string>;
+	cssFile?: string;
+	customCss?: string;
+}
+
+export interface ThemeSettings {
+	fontSize: 'small' | 'medium' | 'large';
+	fontFamily: string;
+	compactMode: boolean;
+	colorScheme: 'auto' | 'light' | 'dark';
+	customCssOverrides: string;
+}
+
+// File filtering interfaces
+export interface FilterOptions {
+	query: string;
+	isRegex: boolean;
+	isGlob: boolean;
+	caseSensitive: boolean;
+	showFoldersOnly: boolean;
+	showFilesOnly: boolean;
+}
+
+export interface FilterState {
+	isActive: boolean;
+	options: FilterOptions;
+	originalFiles: TAbstractFile[];
+	filteredFiles: TAbstractFile[];
+}
+
+export interface FileFilterProps {
+	paneId: 'left' | 'right';
+	filterState?: FilterState;
+	onFilterChange: (options: FilterOptions) => void;
+	onFilterToggle: (isActive: boolean) => void;
+	onFilterClear: () => void;
 }

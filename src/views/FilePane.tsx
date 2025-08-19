@@ -1,9 +1,10 @@
 import React, { useRef, useMemo } from 'react';
-import { TAbstractFile, TFolder, TFile } from 'obsidian';
+import { TAbstractFile, TFolder } from 'obsidian';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { FilePaneProps } from '../types/interfaces';
 import { FileItem } from './FileItem';
 import { BreadcrumbNavigation } from '../components/BreadcrumbNavigation';
+import { FileFilter } from '../components/FileFilter';
 
 export const FilePane: React.FC<FilePaneProps> = ({
 	paneState,
@@ -11,37 +12,49 @@ export const FilePane: React.FC<FilePaneProps> = ({
 	onFileClick,
 	onFileContextMenu,
 	onNavigateToFolder,
+	onFilterChange,
+	onFilterToggle,
+	onFilterClear,
 }) => {
 	// Helper function to select a range of files
-	const selectFileRange = (startIndex: number, endIndex: number): Set<string> => {
+	const selectFileRange = (
+		startIndex: number,
+		endIndex: number
+	): Set<string> => {
 		const newSelection = new Set<string>();
 		const start = Math.min(startIndex, endIndex);
 		const end = Math.max(startIndex, endIndex);
-		
+
 		for (let i = start; i <= end; i++) {
 			if (i >= 0 && i < paneState.files.length) {
 				newSelection.add(paneState.files[i].path);
 			}
 		}
-		
+
 		return newSelection;
 	};
-	const handleFileItemClick = (file: TAbstractFile, event: React.MouseEvent) => {
+	const handleFileItemClick = (
+		file: TAbstractFile,
+		event: React.MouseEvent
+	) => {
 		// Activate this pane when clicked (if not already active)
 		if (!paneState.isActive) {
 			onStateChange({ isActive: true });
 		}
-		
+
 		const fileIndex = paneState.files.indexOf(file);
 		if (fileIndex < 0) return;
-		
+
 		// Handle Shift+click for range selection
 		if (event.shiftKey && paneState.lastClickedIndex !== undefined) {
 			// Select range from lastClickedIndex to current index
-			const rangeSelection = selectFileRange(paneState.lastClickedIndex, fileIndex);
-			onStateChange({ 
+			const rangeSelection = selectFileRange(
+				paneState.lastClickedIndex,
+				fileIndex
+			);
+			onStateChange({
 				selectedIndex: fileIndex,
-				selectedFiles: rangeSelection
+				selectedFiles: rangeSelection,
 			});
 		} else if (event.ctrlKey || event.metaKey) {
 			// Ctrl+click for individual toggle selection
@@ -51,25 +64,28 @@ export const FilePane: React.FC<FilePaneProps> = ({
 			} else {
 				newSelection.add(file.path);
 			}
-			onStateChange({ 
+			onStateChange({
 				selectedIndex: fileIndex,
 				selectedFiles: newSelection,
-				lastClickedIndex: fileIndex
+				lastClickedIndex: fileIndex,
 			});
 		} else {
 			// Regular click - clear multi-selection and select single file
-			onStateChange({ 
+			onStateChange({
 				selectedIndex: fileIndex,
 				selectedFiles: new Set(),
-				lastClickedIndex: fileIndex
+				lastClickedIndex: fileIndex,
 			});
 		}
-		
+
 		// Handle file click
 		onFileClick(file);
 	};
 
-	const handleFileItemDoubleClick = (file: TAbstractFile, event: React.MouseEvent) => {
+	const handleFileItemDoubleClick = (
+		file: TAbstractFile,
+		event: React.MouseEvent
+	) => {
 		if (file instanceof TFolder) {
 			onNavigateToFolder(file);
 		} else {
@@ -78,40 +94,25 @@ export const FilePane: React.FC<FilePaneProps> = ({
 		}
 	};
 
-	const handleFileItemContextMenu = (file: TAbstractFile, event: React.MouseEvent) => {
+	const handleFileItemContextMenu = (
+		file: TAbstractFile,
+		event: React.MouseEvent
+	) => {
 		event.preventDefault();
 		onFileContextMenu(file, { x: event.clientX, y: event.clientY });
 	};
 
-	const getFileIcon = (file: TAbstractFile): string => {
-		if (file instanceof TFolder) {
-			return 'folder';
-		} else if (file instanceof TFile) {
-			const extension = file.extension.toLowerCase();
-			switch (extension) {
-				case 'md':
-					return 'document';
-				case 'pdf':
-					return 'file-text';
-				case 'png':
-				case 'jpg':
-				case 'jpeg':
-				case 'gif':
-				case 'svg':
-					return 'image';
-				default:
-					return 'file';
-			}
-		}
-		return 'file';
-	};
-
 	// Virtual scrolling setup
 	const parentRef = useRef<HTMLDivElement>(null);
-	
+
 	// Memoize files to avoid unnecessary re-renders
-	const files = useMemo(() => paneState.files, [paneState.files]);
-	
+	const files = useMemo(() => {
+		if (paneState.filter?.isActive && paneState.filter.filteredFiles) {
+			return paneState.filter.filteredFiles;
+		}
+		return paneState.files;
+	}, [paneState.files, paneState.filter]);
+
 	// Set up virtualizer
 	const virtualizer = useVirtualizer({
 		count: files.length,
@@ -119,14 +120,19 @@ export const FilePane: React.FC<FilePaneProps> = ({
 		estimateSize: () => 36, // Height of each file item in pixels
 		overscan: 5, // Render 5 extra items outside viewport
 	});
-	
+
 	// Ensure selected item is visible when it changes, but only scroll if it's not already visible
 	React.useEffect(() => {
-		if (paneState.selectedIndex >= 0 && paneState.selectedIndex < files.length) {
+		if (
+			paneState.selectedIndex >= 0 &&
+			paneState.selectedIndex < files.length
+		) {
 			// Only scroll if the selected item is not currently visible
 			const virtualItems = virtualizer.getVirtualItems();
-			const isVisible = virtualItems.some(item => item.index === paneState.selectedIndex);
-			
+			const isVisible = virtualItems.some(
+				item => item.index === paneState.selectedIndex
+			);
+
 			if (!isVisible) {
 				virtualizer.scrollToIndex(paneState.selectedIndex, { align: 'center' });
 			}
@@ -134,14 +140,14 @@ export const FilePane: React.FC<FilePaneProps> = ({
 	}, [paneState.selectedIndex, virtualizer, files.length]);
 
 	return (
-		<div 
+		<div
 			className={`file-pane ${paneState.isActive ? 'active' : 'inactive'}`}
 			data-pane-id={paneState.id}
 		>
 			{/* Individual pane header */}
 			<div className="pane-header">
 				<div className="pane-path">
-					<BreadcrumbNavigation 
+					<BreadcrumbNavigation
 						currentFolder={paneState.currentFolder}
 						onNavigateToFolder={onNavigateToFolder}
 						isActive={paneState.isActive}
@@ -163,13 +169,24 @@ export const FilePane: React.FC<FilePaneProps> = ({
 					)}
 				</div>
 			</div>
-			
+
+			{/* File Filter */}
+			{onFilterChange && onFilterToggle && onFilterClear && (
+				<FileFilter
+					paneId={paneState.id}
+					filterState={paneState.filter}
+					onFilterChange={onFilterChange}
+					onFilterToggle={onFilterToggle}
+					onFilterClear={onFilterClear}
+				/>
+			)}
+
 			{files.length === 0 ? (
 				<div className="file-list-empty">
 					<p>No files in this directory</p>
 				</div>
 			) : (
-				<div 
+				<div
 					ref={parentRef}
 					className="file-list file-list-virtual"
 					style={{
@@ -185,10 +202,10 @@ export const FilePane: React.FC<FilePaneProps> = ({
 							position: 'relative',
 						}}
 					>
-						{virtualizer.getVirtualItems().map((virtualItem) => {
+						{virtualizer.getVirtualItems().map(virtualItem => {
 							const file = files[virtualItem.index];
 							if (!file) return null;
-							
+
 							return (
 								<div
 									key={virtualItem.key}
@@ -205,7 +222,10 @@ export const FilePane: React.FC<FilePaneProps> = ({
 									{/* Multi-selection can show on any pane, but only when files are actually selected */}
 									<FileItem
 										file={file}
-										isSelected={paneState.isActive && virtualItem.index === paneState.selectedIndex}
+										isSelected={
+											paneState.isActive &&
+											virtualItem.index === paneState.selectedIndex
+										}
 										isHighlighted={paneState.selectedFiles.has(file.path)}
 										onClick={handleFileItemClick}
 										onContextMenu={handleFileItemContextMenu}
