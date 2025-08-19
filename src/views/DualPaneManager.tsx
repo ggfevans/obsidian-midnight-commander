@@ -1,14 +1,17 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { TAbstractFile } from 'obsidian';
 import { FilePane } from './FilePane';
 import { QuickSearch } from '../components/QuickSearch';
 import { FilePreview } from '../components/FilePreview';
+import { ResizeHandle } from '../components/ResizeHandle';
 import { DualPaneManagerProps } from '../types/interfaces';
 
 export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	app,
 	leftPane,
 	rightPane,
+	layoutOrientation,
+	settings,
 	onPaneStateChange,
 	onFileClick,
 	onFileContextMenu,
@@ -16,11 +19,20 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	onFilterChange,
 	onFilterToggle,
 	onFilterClear,
+	onPaneSizeChange,
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
-	const [containerHeight, setContainerHeight] = useState(400); // Default height
-	const [topPaneHeight, setTopPaneHeight] = useState(200); // Default to 50%
+	// Container dimensions
+	const [containerHeight, setContainerHeight] = useState(400);
+	const [containerWidth, setContainerWidth] = useState(800);
+
+	// Vertical layout dimensions (current implementation)
+	const [topPaneHeight, setTopPaneHeight] = useState(200);
 	const [bottomPaneHeight, setBottomPaneHeight] = useState(200);
+
+	// Horizontal layout dimensions
+	const [leftPaneWidth, setLeftPaneWidth] = useState(400);
+	const [rightPaneWidth, setRightPaneWidth] = useState(400);
 
 	// Quick search state
 	const [showLeftSearch, setShowLeftSearch] = useState(false);
@@ -30,31 +42,106 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	const [showFilePreview, setShowFilePreview] = useState(false);
 	const [previewFile, setPreviewFile] = useState<TAbstractFile | null>(null);
 
-	// Update container height when the component mounts or resizes
+	// Debounced save function to prevent excessive settings saves during resize
+	const debouncedSave = useCallback(
+		(() => {
+			let timeoutId: NodeJS.Timeout;
+			return (
+				orientation: 'vertical' | 'horizontal',
+				sizes: {
+					topPaneHeight?: number;
+					bottomPaneHeight?: number;
+					leftPaneWidth?: number;
+					rightPaneWidth?: number;
+				}
+			) => {
+				clearTimeout(timeoutId);
+				timeoutId = setTimeout(() => {
+					if (settings.rememberPaneSizes && onPaneSizeChange) {
+						onPaneSizeChange(orientation, sizes);
+					}
+				}, 100); // 100ms debounce
+			};
+		})(),
+		[settings.rememberPaneSizes, onPaneSizeChange]
+	);
+
+	// Load saved pane sizes from settings on mount and orientation change
 	useEffect(() => {
-		const updateHeight = () => {
+		if (settings.rememberPaneSizes) {
+			if (layoutOrientation === 'vertical' && settings.verticalPaneSizes) {
+				// Validate saved sizes are reasonable (not zero or negative)
+				const topHeight = settings.verticalPaneSizes.topPaneHeight;
+				const bottomHeight = settings.verticalPaneSizes.bottomPaneHeight;
+				if (topHeight > 50 && bottomHeight > 50) {
+					setTopPaneHeight(topHeight);
+					setBottomPaneHeight(bottomHeight);
+				}
+			} else if (
+				layoutOrientation === 'horizontal' &&
+				settings.horizontalPaneSizes
+			) {
+				// Validate saved sizes are reasonable (not zero or negative)
+				const leftWidth = settings.horizontalPaneSizes.leftPaneWidth;
+				const rightWidth = settings.horizontalPaneSizes.rightPaneWidth;
+				if (leftWidth > 50 && rightWidth > 50) {
+					setLeftPaneWidth(leftWidth);
+					setRightPaneWidth(rightWidth);
+				}
+			}
+		}
+	}, [
+		layoutOrientation,
+		settings.rememberPaneSizes,
+		settings.verticalPaneSizes,
+		settings.horizontalPaneSizes,
+	]);
+
+	// Update container dimensions when the component mounts or resizes
+	useEffect(() => {
+		const updateDimensions = () => {
 			if (containerRef.current) {
 				const height = containerRef.current.clientHeight;
-				if (height > 0) {
-					setContainerHeight(height);
-					// Initialize with 50/50 split accounting for handle height
-					const handleHeight = 8; // Height of resize handle
-					const availableHeight = height - handleHeight;
-					const newTopHeight = Math.floor(availableHeight * 0.5);
-					const newBottomHeight = availableHeight - newTopHeight; // Ensure exact fit
+				const width = containerRef.current.clientWidth;
 
-					setTopPaneHeight(newTopHeight);
-					setBottomPaneHeight(newBottomHeight);
+				if (height > 0 && width > 0) {
+					setContainerHeight(height);
+					setContainerWidth(width);
+
+					const handleSize = 8; // Size of resize handle
+
+					// Only initialize with 50/50 split if no saved sizes
+					if (layoutOrientation === 'vertical') {
+						if (!settings.rememberPaneSizes || !settings.verticalPaneSizes) {
+							// Initialize vertical layout with 50/50 split
+							const availableHeight = height - handleSize;
+							const newTopHeight = Math.floor(availableHeight * 0.5);
+							const newBottomHeight = availableHeight - newTopHeight;
+
+							setTopPaneHeight(newTopHeight);
+							setBottomPaneHeight(newBottomHeight);
+						}
+					} else {
+						if (!settings.rememberPaneSizes || !settings.horizontalPaneSizes) {
+							// Initialize horizontal layout with 50/50 split
+							const availableWidth = width - handleSize;
+							const newLeftWidth = Math.floor(availableWidth * 0.5);
+							const newRightWidth = availableWidth - newLeftWidth;
+
+							setLeftPaneWidth(newLeftWidth);
+							setRightPaneWidth(newRightWidth);
+						}
+					}
 				}
 			}
 		};
 
-		// Try to get height after a small delay to ensure DOM is ready
-		const timeoutId = setTimeout(updateHeight, 100);
+		// Try to get dimensions after a small delay to ensure DOM is ready
+		const timeoutId = setTimeout(updateDimensions, 100);
 
 		// Add resize observer to track container size changes
 		const resizeObserver = new ResizeObserver(() => {
-			updateHeight();
+			updateDimensions();
 		});
 
 		if (containerRef.current) {
@@ -65,7 +152,12 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 			clearTimeout(timeoutId);
 			resizeObserver.disconnect();
 		};
-	}, []);
+	}, [
+		layoutOrientation,
+		settings.rememberPaneSizes,
+		settings.verticalPaneSizes,
+		settings.horizontalPaneSizes,
+	]);
 
 	// Event handlers
 	const handleLeftPaneStateChange = (newState: any) => {
@@ -204,8 +296,64 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 		};
 	}, [leftPane.isActive, rightPane.isActive, showLeftSearch, showRightSearch]);
 
-	return (
-		<div ref={containerRef} className="midnight-commander-dual-pane">
+	// Vertical resize handlers
+	const handleVerticalResize = (delta: number) => {
+		const handleHeight = 8;
+		const availableHeight = containerHeight - handleHeight;
+		const newTopHeight = Math.max(
+			100,
+			Math.min(availableHeight - 100, topPaneHeight + delta)
+		);
+		const newBottomHeight = availableHeight - newTopHeight;
+
+		setTopPaneHeight(newTopHeight);
+		setBottomPaneHeight(newBottomHeight);
+
+		// Use debounced save to prevent excessive settings saves
+		debouncedSave('vertical', {
+			topPaneHeight: newTopHeight,
+			bottomPaneHeight: newBottomHeight,
+		});
+	};
+
+	const handleVerticalReset = () => {
+		const handleHeight = 8;
+		const availableHeight = containerHeight - handleHeight;
+		const resetHeight = Math.floor(availableHeight / 2);
+		setTopPaneHeight(resetHeight);
+		setBottomPaneHeight(availableHeight - resetHeight);
+	};
+
+	// Horizontal resize handlers
+	const handleHorizontalResize = (delta: number) => {
+		const handleWidth = 8;
+		const availableWidth = containerWidth - handleWidth;
+		const newLeftWidth = Math.max(
+			100,
+			Math.min(availableWidth - 100, leftPaneWidth + delta)
+		);
+		const newRightWidth = availableWidth - newLeftWidth;
+
+		setLeftPaneWidth(newLeftWidth);
+		setRightPaneWidth(newRightWidth);
+
+		// Use debounced save to prevent excessive settings saves
+		debouncedSave('horizontal', {
+			leftPaneWidth: newLeftWidth,
+			rightPaneWidth: newRightWidth,
+		});
+	};
+
+	const handleHorizontalReset = () => {
+		const handleWidth = 8;
+		const availableWidth = containerWidth - handleWidth;
+		const resetWidth = Math.floor(availableWidth / 2);
+		setLeftPaneWidth(resetWidth);
+		setRightPaneWidth(availableWidth - resetWidth);
+	};
+
+	const renderVerticalLayout = () => (
+		<>
 			{/* Top pane (left in our context) */}
 			<div
 				className="pane-container pane-top"
@@ -233,63 +381,12 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				/>
 			</div>
 
-			{/* Resize handle */}
-			<div
-				className="resize-handle"
-				onMouseDown={e => {
-					e.preventDefault();
-					const startY = e.clientY;
-					const startTopHeight = topPaneHeight;
-
-					// Add dragging class
-					const handleElement = e.currentTarget as HTMLElement;
-					handleElement.classList.add('dragging');
-
-					const handleMouseMove = (e: MouseEvent) => {
-						const deltaY = e.clientY - startY;
-						// Account for handle height in available space
-						const handleHeight = 8;
-						const availableHeight = containerHeight - handleHeight;
-						const newTopHeight = Math.max(
-							100,
-							Math.min(availableHeight - 100, startTopHeight + deltaY)
-						);
-						const newBottomHeight = availableHeight - newTopHeight;
-
-						setTopPaneHeight(newTopHeight);
-						setBottomPaneHeight(newBottomHeight);
-					};
-
-					const handleMouseUp = () => {
-						document.removeEventListener('mousemove', handleMouseMove);
-						document.removeEventListener('mouseup', handleMouseUp);
-						document.body.style.cursor = '';
-						handleElement.classList.remove('dragging');
-					};
-
-					document.addEventListener('mousemove', handleMouseMove);
-					document.addEventListener('mouseup', handleMouseUp);
-					document.body.style.cursor = 'ns-resize';
-				}}
-				onDoubleClick={() => {
-					const handleHeight = 8;
-					const availableHeight = containerHeight - handleHeight;
-					const resetHeight = Math.floor(availableHeight / 2);
-					setTopPaneHeight(resetHeight);
-					setBottomPaneHeight(availableHeight - resetHeight);
-				}}
-				title="Drag to resize panes (double-click to reset)"
-			>
-				<div className="resize-handle-grip">
-					<div className="resize-handle-line" />
-					<div className="resize-handle-dots">
-						<span></span>
-						<span></span>
-						<span></span>
-					</div>
-					<div className="resize-handle-line" />
-				</div>
-			</div>
+			{/* Vertical resize handle */}
+			<ResizeHandle
+				orientation="vertical"
+				onResize={handleVerticalResize}
+				onReset={handleVerticalReset}
+			/>
 
 			{/* Bottom pane (right in our context) */}
 			<div
@@ -317,6 +414,82 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					}
 				/>
 			</div>
+		</>
+	);
+
+	const renderHorizontalLayout = () => (
+		<>
+			{/* Left pane */}
+			<div
+				className="pane-container pane-left"
+				style={{ width: `${leftPaneWidth}px` }}
+			>
+				<FilePane
+					paneState={leftPane}
+					onStateChange={handleLeftPaneStateChange}
+					onFileClick={handleLeftFileClick}
+					onFileContextMenu={handleLeftFileContextMenu}
+					onNavigateToFolder={handleLeftNavigateToFolder}
+					onFilterChange={
+						onFilterChange
+							? options => onFilterChange('left', options)
+							: undefined
+					}
+					onFilterToggle={
+						onFilterToggle
+							? isActive => onFilterToggle('left', isActive)
+							: undefined
+					}
+					onFilterClear={
+						onFilterClear ? () => onFilterClear('left') : undefined
+					}
+				/>
+			</div>
+
+			{/* Horizontal resize handle */}
+			<ResizeHandle
+				orientation="horizontal"
+				onResize={handleHorizontalResize}
+				onReset={handleHorizontalReset}
+			/>
+
+			{/* Right pane */}
+			<div
+				className="pane-container pane-right"
+				style={{ width: `${rightPaneWidth}px` }}
+			>
+				<FilePane
+					paneState={rightPane}
+					onStateChange={handleRightPaneStateChange}
+					onFileClick={handleRightFileClick}
+					onFileContextMenu={handleRightFileContextMenu}
+					onNavigateToFolder={handleRightNavigateToFolder}
+					onFilterChange={
+						onFilterChange
+							? options => onFilterChange('right', options)
+							: undefined
+					}
+					onFilterToggle={
+						onFilterToggle
+							? isActive => onFilterToggle('right', isActive)
+							: undefined
+					}
+					onFilterClear={
+						onFilterClear ? () => onFilterClear('right') : undefined
+					}
+				/>
+			</div>
+		</>
+	);
+
+	return (
+		<div
+			ref={containerRef}
+			className={`midnight-commander-dual-pane ${layoutOrientation}`}
+		>
+			{layoutOrientation === 'vertical'
+				? renderVerticalLayout()
+				: renderHorizontalLayout()}
 
 			{/* Quick search overlays */}
 			{showLeftSearch && (

@@ -32,6 +32,9 @@ const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	fontFamily: '',
 	compactMode: false,
 	customCssOverrides: '',
+	// Layout settings
+	layoutOrientation: 'vertical',
+	rememberPaneSizes: true,
 };
 
 export default class MidnightCommanderPlugin extends Plugin {

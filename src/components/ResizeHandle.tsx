@@ -1,102 +1,85 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React from 'react';
 
-interface ResizeHandleProps {
-    onResize: (topHeight: number, bottomHeight: number) => void;
-    containerHeight: number;
-    initialTopHeight?: number;
+export interface ResizeHandleProps {
+	orientation: 'vertical' | 'horizontal';
+	onResize: (delta: number) => void;
+	onReset?: () => void;
+	className?: string;
+	style?: React.CSSProperties;
 }
 
 export const ResizeHandle: React.FC<ResizeHandleProps> = ({
-    onResize,
-    containerHeight,
-    initialTopHeight = containerHeight * 0.5, // 50% by default
+	orientation,
+	onResize,
+	onReset,
+	className = '',
+	style = {},
 }) => {
-    const [isDragging, setIsDragging] = useState(false);
-    const [topHeight, setTopHeight] = useState(initialTopHeight);
-    const handleRef = useRef<HTMLDivElement>(null);
-    const containerRef = useRef<HTMLDivElement>(null);
+	const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+		e.preventDefault();
 
-    // Calculate bottom height
-    const bottomHeight = containerHeight - topHeight;
+		const startX = e.clientX;
+		const startY = e.clientY;
 
-    const handleMouseDown = useCallback((e: React.MouseEvent) => {
-        e.preventDefault();
-        setIsDragging(true);
-        
-        // Add global mouse event listeners
-        const handleMouseMove = (e: MouseEvent) => {
-            if (!containerRef.current) return;
-            
-            const containerRect = containerRef.current.getBoundingClientRect();
-            const relativeY = e.clientY - containerRect.top;
-            
-            // Constrain to reasonable bounds (minimum 100px for each pane)
-            const minPaneHeight = 100;
-            const maxTopHeight = containerHeight - minPaneHeight;
-            const newTopHeight = Math.max(minPaneHeight, Math.min(maxTopHeight, relativeY));
-            
-            setTopHeight(newTopHeight);
-            onResize(newTopHeight, containerHeight - newTopHeight);
-        };
-        
-        const handleMouseUp = () => {
-            setIsDragging(false);
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
-        };
-        
-        document.addEventListener('mousemove', handleMouseMove);
-        document.addEventListener('mouseup', handleMouseUp);
-    }, [containerHeight, onResize]);
+		// Add dragging class
+		const handleElement = e.currentTarget as HTMLElement;
+		handleElement.classList.add('dragging');
 
-    // Handle double-click to reset to 50/50
-    const handleDoubleClick = useCallback(() => {
-        const resetHeight = containerHeight * 0.5;
-        setTopHeight(resetHeight);
-        onResize(resetHeight, containerHeight - resetHeight);
-    }, [containerHeight, onResize]);
+		const handleMouseMove = (e: MouseEvent) => {
+			if (orientation === 'vertical') {
+				const deltaY = e.clientY - startY;
+				onResize(deltaY);
+			} else {
+				const deltaX = e.clientX - startX;
+				onResize(deltaX);
+			}
+		};
 
-    // Update top height when container height changes
-    useEffect(() => {
-        if (containerHeight > 0) {
-            // Maintain the same proportion when container resizes
-            const proportion = topHeight / (topHeight + bottomHeight);
-            const newTopHeight = containerHeight * proportion;
-            setTopHeight(newTopHeight);
-            onResize(newTopHeight, containerHeight - newTopHeight);
-        }
-    }, [containerHeight]);
+		const handleMouseUp = () => {
+			document.removeEventListener('mousemove', handleMouseMove);
+			document.removeEventListener('mouseup', handleMouseUp);
+			document.body.style.cursor = '';
+			handleElement.classList.remove('dragging');
+		};
 
-    return (
-        <div
-            ref={containerRef}
-            className="resize-container"
-            style={{ height: containerHeight }}
-        >
-            {/* Top pane spacer */}
-            <div style={{ height: topHeight, pointerEvents: 'none' }} />
-            
-            {/* Resize handle */}
-            <div
-                ref={handleRef}
-                className={`resize-handle ${isDragging ? 'dragging' : ''}`}
-                onMouseDown={handleMouseDown}
-                onDoubleClick={handleDoubleClick}
-                title="Drag to resize panes (double-click to reset)"
-            >
-                <div className="resize-handle-grip">
-                    <div className="resize-handle-line" />
-                    <div className="resize-handle-dots">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                    </div>
-                    <div className="resize-handle-line" />
-                </div>
-            </div>
-            
-            {/* Bottom pane spacer */}
-            <div style={{ height: bottomHeight, pointerEvents: 'none' }} />
-        </div>
-    );
+		document.addEventListener('mousemove', handleMouseMove);
+		document.addEventListener('mouseup', handleMouseUp);
+
+		// Set appropriate cursor based on orientation
+		document.body.style.cursor =
+			orientation === 'vertical' ? 'ns-resize' : 'ew-resize';
+	};
+
+	const handleDoubleClick = () => {
+		if (onReset) {
+			onReset();
+		}
+	};
+
+	const baseClassName = `resize-handle ${orientation === 'horizontal' ? 'horizontal' : ''}`;
+	const combinedClassName = `${baseClassName} ${className}`.trim();
+
+	return (
+		<div
+			className={combinedClassName}
+			style={style}
+			onMouseDown={handleMouseDown}
+			onDoubleClick={handleDoubleClick}
+			title="Drag to resize panes (double-click to reset)"
+			tabIndex={0}
+			role="separator"
+			aria-orientation={orientation}
+			aria-label={`Resize ${orientation === 'vertical' ? 'top and bottom' : 'left and right'} panes`}
+		>
+			<div className="resize-handle-grip">
+				<div className="resize-handle-line" />
+				<div className="resize-handle-dots">
+					<span></span>
+					<span></span>
+					<span></span>
+				</div>
+				<div className="resize-handle-line" />
+			</div>
+		</div>
+	);
 };

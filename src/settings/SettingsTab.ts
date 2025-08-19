@@ -124,6 +124,38 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 					})
 			);
 
+		new Setting(containerEl)
+			.setName('Layout orientation')
+			.setDesc(
+				'Choose between vertical (stacked) or horizontal (side-by-side) dual-pane layout.'
+			)
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('vertical', 'Vertical (Stacked)')
+					.addOption('horizontal', 'Horizontal (Side-by-side)')
+					.setValue(this.plugin.settings.layoutOrientation)
+					.onChange(async value => {
+						this.plugin.settings.layoutOrientation = value as
+							| 'vertical'
+							| 'horizontal';
+						await this.plugin.saveSettings();
+						// Refresh any open views to apply the new layout
+						this.refreshOpenViews();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName('Remember pane sizes')
+			.setDesc('Remember and restore pane sizes for each layout orientation.')
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.rememberPaneSizes)
+					.onChange(async value => {
+						this.plugin.settings.rememberPaneSizes = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
 		// === THEME & APPEARANCE ===
 		containerEl.createEl('h3', { text: 'Theme & Appearance' });
 
@@ -513,6 +545,23 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 				const view = leaf.view as any;
 				if (view && typeof view.applyTheme === 'function') {
 					view.applyTheme();
+				}
+			});
+		}
+	}
+
+	/**
+	 * Refresh all active Midnight Commander views to apply layout changes
+	 */
+	private refreshOpenViews() {
+		const leaves = this.app.workspace.getLeavesOfType(
+			VIEW_TYPE_MIDNIGHT_COMMANDER
+		);
+		if (leaves.length > 0) {
+			leaves.forEach(leaf => {
+				const view = leaf.view as any;
+				if (view && typeof view.renderDualPane === 'function') {
+					view.renderDualPane();
 				}
 			});
 		}

@@ -432,6 +432,8 @@ export class MidnightCommanderView extends ItemView {
 						app={this.app}
 						leftPane={this.leftPane}
 						rightPane={this.rightPane}
+						layoutOrientation={this.settings.layoutOrientation}
+						settings={this.settings}
 						onPaneStateChange={this.handlePaneStateChange.bind(this)}
 						onFileClick={this.handleFileClick.bind(this)}
 						onFileContextMenu={this.handleFileContextMenu.bind(this)}
@@ -439,6 +441,7 @@ export class MidnightCommanderView extends ItemView {
 						onFilterChange={this.handleFilterChange.bind(this)}
 						onFilterToggle={this.handleFilterToggle.bind(this)}
 						onFilterClear={this.handleFilterClear.bind(this)}
+						onPaneSizeChange={this.handlePaneSizeChange.bind(this)}
 					/>
 				</RecoilRoot>
 			</div>
@@ -1110,6 +1113,46 @@ export class MidnightCommanderView extends ItemView {
 		this.navigateToFolder(pane, folder);
 	}
 
+	/**
+	 * Handle pane size changes and persist them to settings
+	 */
+	private handlePaneSizeChange(
+		orientation: 'vertical' | 'horizontal',
+		sizes: {
+			topPaneHeight?: number;
+			bottomPaneHeight?: number;
+			leftPaneWidth?: number;
+			rightPaneWidth?: number;
+		}
+	) {
+		if (!this.settings.rememberPaneSizes) {
+			return;
+		}
+
+		if (
+			orientation === 'vertical' &&
+			sizes.topPaneHeight !== undefined &&
+			sizes.bottomPaneHeight !== undefined
+		) {
+			this.settings.verticalPaneSizes = {
+				topPaneHeight: sizes.topPaneHeight,
+				bottomPaneHeight: sizes.bottomPaneHeight,
+			};
+		} else if (
+			orientation === 'horizontal' &&
+			sizes.leftPaneWidth !== undefined &&
+			sizes.rightPaneWidth !== undefined
+		) {
+			this.settings.horizontalPaneSizes = {
+				leftPaneWidth: sizes.leftPaneWidth,
+				rightPaneWidth: sizes.rightPaneWidth,
+			};
+		}
+
+		// Save settings asynchronously
+		this.plugin.saveSettings();
+	}
+
 	// ====================
 	// FILE OPERATIONS (F-KEY FUNCTIONALITY)
 	// ====================
@@ -1716,6 +1759,10 @@ export class MidnightCommanderView extends ItemView {
 			activePane: this.viewState.activePane,
 			leftSelectedIndex: this.viewState.leftSelectedIndex,
 			rightSelectedIndex: this.viewState.rightSelectedIndex,
+			// Include layout and pane sizes for session persistence
+			layoutOrientation: this.settings.layoutOrientation,
+			verticalPaneSizes: this.settings.verticalPaneSizes,
+			horizontalPaneSizes: this.settings.horizontalPaneSizes,
 		};
 	}
 
@@ -1731,6 +1778,17 @@ export class MidnightCommanderView extends ItemView {
 				leftSelectedIndex: data.leftSelectedIndex || 0,
 				rightSelectedIndex: data.rightSelectedIndex || 0,
 			};
+
+			// Restore layout orientation and pane sizes if available
+			if (data.layoutOrientation) {
+				this.settings.layoutOrientation = data.layoutOrientation;
+			}
+			if (data.verticalPaneSizes) {
+				this.settings.verticalPaneSizes = data.verticalPaneSizes;
+			}
+			if (data.horizontalPaneSizes) {
+				this.settings.horizontalPaneSizes = data.horizontalPaneSizes;
+			}
 		}
 	}
 

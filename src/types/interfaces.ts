@@ -27,6 +27,20 @@ export interface MidnightCommanderSettings {
 	fontSize?: 'small' | 'medium' | 'large';
 	fontFamily?: string;
 	compactMode?: boolean;
+
+	// Layout settings
+	layoutOrientation: 'vertical' | 'horizontal';
+	rememberPaneSizes: boolean;
+
+	// Pane size persistence per orientation
+	verticalPaneSizes?: {
+		topPaneHeight: number;
+		bottomPaneHeight: number;
+	};
+	horizontalPaneSizes?: {
+		leftPaneWidth: number;
+		rightPaneWidth: number;
+	};
 }
 
 export interface BookmarkItem {
@@ -63,6 +77,8 @@ export interface DualPaneManagerProps {
 	app: App;
 	leftPane: PaneState;
 	rightPane: PaneState;
+	layoutOrientation: 'vertical' | 'horizontal';
+	settings: MidnightCommanderSettings;
 	onPaneStateChange: (
 		paneId: 'left' | 'right',
 		newState: Partial<PaneState>
@@ -81,6 +97,15 @@ export interface DualPaneManagerProps {
 	onFilterChange?: (paneId: 'left' | 'right', options: FilterOptions) => void;
 	onFilterToggle?: (paneId: 'left' | 'right', isActive: boolean) => void;
 	onFilterClear?: (paneId: 'left' | 'right') => void;
+	onPaneSizeChange?: (
+		orientation: 'vertical' | 'horizontal',
+		sizes: {
+			topPaneHeight?: number;
+			bottomPaneHeight?: number;
+			leftPaneWidth?: number;
+			rightPaneWidth?: number;
+		}
+	) => void;
 }
 
 export interface FilePaneProps {
