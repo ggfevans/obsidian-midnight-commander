@@ -2,12 +2,12 @@
  * Context-menu implementation notes can be found in gVault:
  * [[01-PROJECTS/obsidian-midnight-commander/Context-Menu Implementation]]
  */
-import {
-	Plugin,
-	WorkspaceLeaf,
-} from 'obsidian';
+import { Plugin, WorkspaceLeaf } from 'obsidian';
 
-import { MidnightCommanderView, VIEW_TYPE_MIDNIGHT_COMMANDER } from './src/views/MidnightCommanderView';
+import {
+	MidnightCommanderView,
+	VIEW_TYPE_MIDNIGHT_COMMANDER,
+} from './src/views/MidnightCommanderView';
 import { MidnightCommanderSettings } from './src/types/interfaces';
 import { NavigationService } from './src/services/NavigationService';
 import { MidnightCommanderSettingTab } from './src/settings/SettingsTab';
@@ -25,6 +25,13 @@ const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	previewDelay: 300,
 	keymapProfile: 'default',
 	centerBreadcrumbs: false,
+	// Theme settings
+	theme: 'default',
+	colorScheme: 'auto',
+	fontSize: 'medium',
+	fontFamily: '',
+	compactMode: false,
+	customCssOverrides: '',
 };
 
 export default class MidnightCommanderPlugin extends Plugin {
@@ -36,29 +43,29 @@ export default class MidnightCommanderPlugin extends Plugin {
 
 	async onload() {
 		console.log('Loading Obsidian Midnight Commander plugin');
-		
+
 		// Initialize plugin context for centralized lifecycle management
 		this.context = new PluginContext(this.app, this);
 		this.addChild(this.context);
-		
+
 		// Register initialization modules
 		this.registerInitModules();
-		
+
 		// Initialize all modules
 		await this.context.initializeModules();
 	}
 
 	async onunload() {
 		console.log('Unloading Obsidian Midnight Commander plugin');
-		
+
 		// Dispose all modules in proper order
 		if (this.context) {
 			await this.context.disposeModules();
 		}
-		
+
 		// Detach any view leaves
 		this.app.workspace.detachLeavesOfType(VIEW_TYPE_MIDNIGHT_COMMANDER);
-		
+
 		// Call parent cleanup
 		super.onunload();
 	}
@@ -70,60 +77,58 @@ export default class MidnightCommanderPlugin extends Plugin {
 		// Module 1: Core utilities and managers
 		this.context.addInitModule(async () => {
 			console.log('[Init] Setting up core utilities...');
-			
+
 			// Initialize event manager for centralized event handling
 			this.eventManager = new EventManager(this.app, this);
-			
+
 			// Initialize file cache for performance optimization
 			this.fileCache = new FileCache(this.app, 500);
 			this.addChild(this.fileCache);
 		});
-		
+
 		// Module 2: Settings and configuration
 		this.context.addInitModule(async () => {
 			console.log('[Init] Loading settings and configuration...');
 			await this.loadSettings();
 		});
-		
+
 		// Module 3: Services
 		this.context.addInitModule(async () => {
 			console.log('[Init] Initializing services...');
 			this.navigationService = new NavigationService(this.app);
 		});
-		
+
 		// Module 4: UI Components
 		this.context.addInitModule(async () => {
 			console.log('[Init] Setting up UI components...');
-			
+
 			// Add settings tab
 			this.addSettingTab(new MidnightCommanderSettingTab(this.app, this));
-			
+
 			// Register the custom view
 			this.registerView(
 				VIEW_TYPE_MIDNIGHT_COMMANDER,
-				(leaf) => new MidnightCommanderView(leaf, this)
+				leaf => new MidnightCommanderView(leaf, this)
 			);
-			
+
 			// Add ribbon icon to open the view
-			this.addRibbonIcon(
-				'folder-open',
-				'Open Midnight Commander',
-				() => this.activateView()
+			this.addRibbonIcon('folder-open', 'Open Midnight Commander', () =>
+				this.activateView()
 			);
 		});
-		
+
 		// Module 5: Commands
 		this.context.addInitModule(async () => {
 			console.log('[Init] Registering commands...');
 			this.setupCommands();
 		});
-		
+
 		// Module 6: Event handlers
 		this.context.addInitModule(async () => {
 			console.log('[Init] Setting up event handlers...');
 			this.setupEventHandlers();
 		});
-		
+
 		// Register cleanup modules (in reverse order)
 		this.context.addDisposeModule(async () => {
 			console.log('[Dispose] Cleaning up event handlers...');
@@ -131,12 +136,12 @@ export default class MidnightCommanderPlugin extends Plugin {
 				this.eventManager.cleanup();
 			}
 		});
-		
+
 		this.context.addDisposeModule(async () => {
 			console.log('[Dispose] Cleaning up services...');
 			// Navigation service cleanup (if needed in future)
 		});
-		
+
 		this.context.addDisposeModule(async () => {
 			console.log('[Dispose] Saving final state...');
 			// Save any pending settings or state
@@ -215,7 +220,10 @@ export default class MidnightCommanderPlugin extends Plugin {
 			// in the right sidebar for it
 			leaf = workspace.getRightLeaf(false);
 			if (leaf) {
-				await leaf.setViewState({ type: VIEW_TYPE_MIDNIGHT_COMMANDER, active: true });
+				await leaf.setViewState({
+					type: VIEW_TYPE_MIDNIGHT_COMMANDER,
+					active: true,
+				});
 			}
 		}
 
@@ -232,7 +240,11 @@ export default class MidnightCommanderPlugin extends Plugin {
 		const activeFile = this.app.workspace.getActiveFile();
 		if (!activeFile) return;
 
-		const targetFile = this.navigationService.navigateFile(activeFile, direction, relative);
+		const targetFile = this.navigationService.navigateFile(
+			activeFile,
+			direction,
+			relative
+		);
 		if (targetFile) {
 			this.app.workspace.getLeaf().openFile(targetFile);
 		}

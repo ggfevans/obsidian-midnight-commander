@@ -17,6 +17,8 @@ import { FolderMenu } from '../core/FolderMenu';
 import { PopupMenu } from '../core/PopupMenu';
 import { NavigationService } from '../services/NavigationService';
 import { EventManager } from '../utils/EventManager';
+import { ThemeManager } from '../utils/ThemeManager';
+import { FilterOptions, FilterState } from '../types/interfaces';
 import * as path from 'path';
 import { exec } from 'child_process';
 
@@ -31,6 +33,7 @@ export class MidnightCommanderView extends ItemView {
 	fileOperations: FileOperations;
 	navigationService: NavigationService;
 	eventManager: EventManager;
+	themeManager: ThemeManager;
 
 	// State persistence
 	private viewState: {
@@ -100,6 +103,9 @@ export class MidnightCommanderView extends ItemView {
 
 		// Restore view state if available
 		this.restoreViewState();
+
+		// Initialize theme system
+		await this.initializeTheme();
 
 		this.renderDualPane();
 
@@ -430,10 +436,39 @@ export class MidnightCommanderView extends ItemView {
 						onFileClick={this.handleFileClick.bind(this)}
 						onFileContextMenu={this.handleFileContextMenu.bind(this)}
 						onNavigateToFolder={this.handleNavigateToFolder.bind(this)}
+						onFilterChange={this.handleFilterChange.bind(this)}
+						onFilterToggle={this.handleFilterToggle.bind(this)}
+						onFilterClear={this.handleFilterClear.bind(this)}
 					/>
 				</RecoilRoot>
 			</div>
 		);
+	}
+
+	/**
+	 * Initialize theme system
+	 */
+	async initializeTheme(): Promise<void> {
+		this.themeManager = new ThemeManager('.midnight-commander-view');
+		this.addChild(this.themeManager);
+		await this.themeManager.initialize(this.containerEl);
+		await this.applyTheme();
+	}
+
+	/**
+	 * Apply current theme settings
+	 */
+	async applyTheme(): Promise<void> {
+		if (!this.themeManager) return;
+
+		const settings = this.plugin.settings;
+		await this.themeManager.applyTheme(settings.theme, {
+			fontSize: settings.fontSize,
+			fontFamily: settings.fontFamily,
+			compactMode: settings.compactMode,
+			colorScheme: settings.colorScheme,
+			customCssOverrides: settings.customCssOverrides || '',
+		});
 	}
 
 	async onClose() {
@@ -671,6 +706,124 @@ export class MidnightCommanderView extends ItemView {
 		// Prefetch metadata for files in this folder for better performance
 		if (this.plugin.fileCache) {
 			this.plugin.fileCache.prefetchFolder(folder.path);
+		}
+
+		// Update filter state if filter is active
+		if (pane.filter?.isActive) {
+			this.refreshFiles(pane);
+		}
+
+		this.renderDualPane();
+	}
+
+	/**
+	 * Refresh files for a pane, applying current filter if active
+	 */
+	private refreshFiles(pane: PaneState) {
+		const allFiles = this.getSortedFiles(pane.currentFolder);
+
+		// Update filter state if filter is active
+		if (pane.filter?.isActive) {
+			const filteredFiles = this.filterFiles(allFiles, pane.filter.options);
+			pane.filter = {
+				...pane.filter,
+				filteredFiles,
+				originalFiles: allFiles,
+			};
+			pane.files = filteredFiles;
+		} else {
+			pane.files = allFiles;
+		}
+
+		// Ensure selected index is still valid
+		if (pane.selectedIndex >= pane.files.length) {
+			pane.selectedIndex = Math.max(0, pane.files.length - 1);
+		}
+	}
+
+	/**
+	 * Handle filter changes from the filter component
+	 */
+	private handleFilterChange(paneId: 'left' | 'right', options: FilterOptions) {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+		const originalFiles = pane.filter?.originalFiles || pane.files;
+
+		// Apply filtering
+		const filteredFiles = this.filterFiles(originalFiles, options);
+
+		// Update filter state
+		const filterState: FilterState = {
+			isActive: true,
+			options,
+			filteredFiles,
+			originalFiles,
+		};
+
+		pane.filter = filterState;
+		pane.files = filteredFiles;
+
+		// Reset selection if current selection is out of bounds
+		if (pane.selectedIndex >= filteredFiles.length) {
+			pane.selectedIndex = Math.max(0, filteredFiles.length - 1);
+		}
+
+		this.renderDualPane();
+	}
+
+	/**
+	 * Handle filter toggle (enable/disable)
+	 */
+	private handleFilterToggle(paneId: 'left' | 'right', isActive: boolean) {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+
+		if (!isActive) {
+			// Disable filtering - restore original files
+			if (pane.filter?.originalFiles) {
+				pane.files = pane.filter.originalFiles;
+			}
+			pane.filter = undefined;
+		} else if (!pane.filter) {
+			// Enable filtering with default options
+			const defaultOptions: FilterOptions = {
+				query: '',
+				isRegex: false,
+				isGlob: false,
+				caseSensitive: false,
+				showFoldersOnly: false,
+				showFilesOnly: false,
+			};
+			this.handleFilterChange(paneId, defaultOptions);
+			return; // handleFilterChange will call renderDualPane
+		} else {
+			// Toggle existing filter state
+			pane.filter.isActive = isActive;
+			if (isActive) {
+				// Re-apply current filter
+				this.handleFilterChange(paneId, pane.filter.options);
+				return; // handleFilterChange will call renderDualPane
+			} else {
+				// Restore original files
+				if (pane.filter.originalFiles) {
+					pane.files = pane.filter.originalFiles;
+				}
+			}
+		}
+
+		this.renderDualPane();
+	}
+
+	/**
+	 * Handle filter clear
+	 */
+	private handleFilterClear(paneId: 'left' | 'right') {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+
+		if (pane.filter) {
+			// Reset to original files
+			if (pane.filter.originalFiles) {
+				pane.files = pane.filter.originalFiles;
+			}
+			pane.filter = undefined;
 		}
 
 		this.renderDualPane();
@@ -1141,6 +1294,95 @@ export class MidnightCommanderView extends ItemView {
 	}
 
 	// ====================
+	// FILTER METHODS
+	// ====================
+
+	/**
+	 * Simple filter implementation for files
+	 */
+	private filterFiles(
+		files: TAbstractFile[],
+		options: FilterOptions
+	): TAbstractFile[] {
+		if (
+			!options.query.trim() &&
+			!options.showFoldersOnly &&
+			!options.showFilesOnly
+		) {
+			return files;
+		}
+
+		return files.filter(file => {
+			// Apply file type filters first
+			if (options.showFoldersOnly && !(file instanceof TFolder)) {
+				return false;
+			}
+			if (options.showFilesOnly && !(file instanceof TFile)) {
+				return false;
+			}
+
+			// If no query, just apply type filters
+			if (!options.query.trim()) {
+				return true;
+			}
+
+			// Apply query-based filtering
+			return this.matchesQuery(file, options);
+		});
+	}
+
+	/**
+	 * Check if a file matches the search query
+	 */
+	private matchesQuery(file: TAbstractFile, options: FilterOptions): boolean {
+		const fileName = file.name;
+		const query = options.query;
+
+		try {
+			if (options.isRegex) {
+				const flags = options.caseSensitive ? 'g' : 'gi';
+				const regex = new RegExp(query, flags);
+				return regex.test(fileName);
+			} else if (options.isGlob) {
+				const regex = this.globToRegex(query);
+				const flags = options.caseSensitive ? 'g' : 'gi';
+				const globRegex = new RegExp(regex, flags);
+				return globRegex.test(fileName);
+			} else {
+				// Simple text search
+				const searchText = options.caseSensitive
+					? fileName
+					: fileName.toLowerCase();
+				const searchQuery = options.caseSensitive ? query : query.toLowerCase();
+				return searchText.includes(searchQuery);
+			}
+		} catch (error) {
+			// Invalid regex/glob pattern, fall back to text search
+			const searchText = options.caseSensitive
+				? fileName
+				: fileName.toLowerCase();
+			const searchQuery = options.caseSensitive ? query : query.toLowerCase();
+			return searchText.includes(searchQuery);
+		}
+	}
+
+	/**
+	 * Convert glob pattern to regex
+	 */
+	private globToRegex(glob: string): string {
+		// Escape special regex characters except for glob wildcards
+		let regex = glob
+			.replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
+			.replace(/\*/g, '.*') // Convert * to .*
+			.replace(/\?/g, '.'); // Convert ? to .
+
+		// Handle character classes [abc] and ranges [a-z]
+		regex = regex.replace(/\\\[([^\]]*)\\\]/g, '[$1]');
+
+		return `^${regex}$`;
+	}
+
+	// ====================
 	// HELPER METHODS
 	// ====================
 
@@ -1331,11 +1573,16 @@ export class MidnightCommanderView extends ItemView {
 	 * Toggle quick search overlay for current pane
 	 */
 	private toggleQuickSearch() {
-		// Call the global function exposed by DualPaneManager
-		if ((window as any).toggleQuickSearch) {
-			(window as any).toggleQuickSearch();
+		// Toggle filter for the active pane
+		const activePaneId = this.leftPane.isActive ? 'left' : 'right';
+		const activePane = this.getActivePane();
+
+		// If filter is not active, enable it with default options
+		if (!activePane.filter?.isActive) {
+			this.handleFilterToggle(activePaneId, true);
 		} else {
-			console.warn('Quick search toggle function not available');
+			// If filter is active, toggle it off
+			this.handleFilterToggle(activePaneId, false);
 		}
 	}
 

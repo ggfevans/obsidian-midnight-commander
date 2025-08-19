@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TAbstractFile } from 'obsidian';
 import { FilePane } from './FilePane';
-import { ResizeHandle } from '../components/ResizeHandle';
 import { QuickSearch } from '../components/QuickSearch';
 import { FilePreview } from '../components/FilePreview';
 import { DualPaneManagerProps } from '../types/interfaces';
@@ -14,20 +13,19 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	onFileClick,
 	onFileContextMenu,
 	onNavigateToFolder,
+	onFilterChange,
+	onFilterToggle,
+	onFilterClear,
 }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const [containerHeight, setContainerHeight] = useState(400); // Default height
 	const [topPaneHeight, setTopPaneHeight] = useState(200); // Default to 50%
 	const [bottomPaneHeight, setBottomPaneHeight] = useState(200);
-	
+
 	// Quick search state
 	const [showLeftSearch, setShowLeftSearch] = useState(false);
 	const [showRightSearch, setShowRightSearch] = useState(false);
-	const [leftSearchQuery, setLeftSearchQuery] = useState('');
-	const [rightSearchQuery, setRightSearchQuery] = useState('');
-	const [leftFilteredFiles, setLeftFilteredFiles] = useState<TAbstractFile[]>([]);
-	const [rightFilteredFiles, setRightFilteredFiles] = useState<TAbstractFile[]>([]);
-	
+
 	// File preview state
 	const [showFilePreview, setShowFilePreview] = useState(false);
 	const [previewFile, setPreviewFile] = useState<TAbstractFile | null>(null);
@@ -44,7 +42,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					const availableHeight = height - handleHeight;
 					const newTopHeight = Math.floor(availableHeight * 0.5);
 					const newBottomHeight = availableHeight - newTopHeight; // Ensure exact fit
-					
+
 					setTopPaneHeight(newTopHeight);
 					setBottomPaneHeight(newBottomHeight);
 				}
@@ -53,14 +51,12 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 
 		// Try to get height after a small delay to ensure DOM is ready
 		const timeoutId = setTimeout(updateHeight, 100);
-		
+
 		// Add resize observer to track container size changes
-		const resizeObserver = new ResizeObserver((entries) => {
-			for (const entry of entries) {
-				updateHeight();
-			}
+		const resizeObserver = new ResizeObserver(() => {
+			updateHeight();
 		});
-		
+
 		if (containerRef.current) {
 			resizeObserver.observe(containerRef.current);
 		}
@@ -70,11 +66,6 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 			resizeObserver.disconnect();
 		};
 	}, []);
-
-	const handleResize = (newTopHeight: number, newBottomHeight: number) => {
-		setTopPaneHeight(newTopHeight);
-		setBottomPaneHeight(newBottomHeight);
-	};
 
 	// Event handlers
 	const handleLeftPaneStateChange = (newState: any) => {
@@ -108,30 +99,30 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	const handleRightNavigateToFolder = (folder: any) => {
 		onNavigateToFolder(folder, 'right');
 	};
-	
+
 	// Quick search handlers
-	const handleLeftSearch = (query: string, filteredFiles: TAbstractFile[]) => {
-		setLeftSearchQuery(query);
-		setLeftFilteredFiles(filteredFiles);
+	const handleLeftSearch = (
+		_query: string,
+		_filteredFiles: TAbstractFile[]
+	) => {
+		// Search functionality handled by filter component
 	};
-	
-	const handleRightSearch = (query: string, filteredFiles: TAbstractFile[]) => {
-		setRightSearchQuery(query);
-		setRightFilteredFiles(filteredFiles);
+
+	const handleRightSearch = (
+		_query: string,
+		_filteredFiles: TAbstractFile[]
+	) => {
+		// Search functionality handled by filter component
 	};
-	
+
 	const handleLeftSearchClose = () => {
 		setShowLeftSearch(false);
-		setLeftSearchQuery('');
-		setLeftFilteredFiles([]);
 	};
-	
+
 	const handleRightSearchClose = () => {
 		setShowRightSearch(false);
-		setRightSearchQuery('');
-		setRightFilteredFiles([]);
 	};
-	
+
 	const handleLeftSearchSelect = (file: TAbstractFile) => {
 		// Select the file in the left pane and close search
 		const fileIndex = leftPane.files.findIndex(f => f.path === file.path);
@@ -140,7 +131,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 		}
 		handleLeftSearchClose();
 	};
-	
+
 	const handleRightSearchSelect = (file: TAbstractFile) => {
 		// Select the file in the right pane and close search
 		const fileIndex = rightPane.files.findIndex(f => f.path === file.path);
@@ -149,23 +140,23 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 		}
 		handleRightSearchClose();
 	};
-	
+
 	// File preview handlers
 	const handleShowFilePreview = () => {
 		const activePane = leftPane.isActive ? leftPane : rightPane;
 		const selectedFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (selectedFile) {
 			setPreviewFile(selectedFile);
 			setShowFilePreview(true);
 		}
 	};
-	
+
 	const handleCloseFilePreview = () => {
 		setShowFilePreview(false);
 		setPreviewFile(null);
 	};
-	
+
 	// Expose search toggle functions and file preview function
 	useEffect(() => {
 		// Attach toggle functions to global window object for access from MidnightCommanderView
@@ -177,7 +168,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				}
 			}
 		};
-		
+
 		(window as any).toggleRightSearch = () => {
 			if (rightPane.isActive) {
 				setShowRightSearch(!showRightSearch);
@@ -186,7 +177,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				}
 			}
 		};
-		
+
 		(window as any).toggleQuickSearch = () => {
 			if (leftPane.isActive) {
 				setShowLeftSearch(!showLeftSearch);
@@ -200,10 +191,10 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				}
 			}
 		};
-		
+
 		// Expose file preview function globally
 		(window as any).showFilePreview = handleShowFilePreview;
-		
+
 		return () => {
 			// Cleanup global functions
 			delete (window as any).toggleLeftSearch;
@@ -216,7 +207,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	return (
 		<div ref={containerRef} className="midnight-commander-dual-pane">
 			{/* Top pane (left in our context) */}
-			<div 
+			<div
 				className="pane-container pane-top"
 				style={{ height: `${topPaneHeight}px` }}
 			>
@@ -226,40 +217,56 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					onFileClick={handleLeftFileClick}
 					onFileContextMenu={handleLeftFileContextMenu}
 					onNavigateToFolder={handleLeftNavigateToFolder}
+					onFilterChange={
+						onFilterChange
+							? options => onFilterChange('left', options)
+							: undefined
+					}
+					onFilterToggle={
+						onFilterToggle
+							? isActive => onFilterToggle('left', isActive)
+							: undefined
+					}
+					onFilterClear={
+						onFilterClear ? () => onFilterClear('left') : undefined
+					}
 				/>
 			</div>
 
 			{/* Resize handle */}
 			<div
 				className="resize-handle"
-				onMouseDown={(e) => {
+				onMouseDown={e => {
 					e.preventDefault();
 					const startY = e.clientY;
 					const startTopHeight = topPaneHeight;
-					
+
 					// Add dragging class
 					const handleElement = e.currentTarget as HTMLElement;
 					handleElement.classList.add('dragging');
-					
+
 					const handleMouseMove = (e: MouseEvent) => {
 						const deltaY = e.clientY - startY;
 						// Account for handle height in available space
 						const handleHeight = 8;
 						const availableHeight = containerHeight - handleHeight;
-						const newTopHeight = Math.max(100, Math.min(availableHeight - 100, startTopHeight + deltaY));
+						const newTopHeight = Math.max(
+							100,
+							Math.min(availableHeight - 100, startTopHeight + deltaY)
+						);
 						const newBottomHeight = availableHeight - newTopHeight;
-						
+
 						setTopPaneHeight(newTopHeight);
 						setBottomPaneHeight(newBottomHeight);
 					};
-					
+
 					const handleMouseUp = () => {
 						document.removeEventListener('mousemove', handleMouseMove);
 						document.removeEventListener('mouseup', handleMouseUp);
 						document.body.style.cursor = '';
 						handleElement.classList.remove('dragging');
 					};
-					
+
 					document.addEventListener('mousemove', handleMouseMove);
 					document.addEventListener('mouseup', handleMouseUp);
 					document.body.style.cursor = 'ns-resize';
@@ -285,7 +292,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 			</div>
 
 			{/* Bottom pane (right in our context) */}
-			<div 
+			<div
 				className="pane-container pane-bottom"
 				style={{ height: `${bottomPaneHeight}px` }}
 			>
@@ -295,9 +302,22 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					onFileClick={handleRightFileClick}
 					onFileContextMenu={handleRightFileContextMenu}
 					onNavigateToFolder={handleRightNavigateToFolder}
+					onFilterChange={
+						onFilterChange
+							? options => onFilterChange('right', options)
+							: undefined
+					}
+					onFilterToggle={
+						onFilterToggle
+							? isActive => onFilterToggle('right', isActive)
+							: undefined
+					}
+					onFilterClear={
+						onFilterClear ? () => onFilterClear('right') : undefined
+					}
 				/>
 			</div>
-			
+
 			{/* Quick search overlays */}
 			{showLeftSearch && (
 				<QuickSearch
@@ -309,7 +329,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					placeholder={`Search in ${leftPane.currentFolder.name}...`}
 				/>
 			)}
-			
+
 			{showRightSearch && (
 				<QuickSearch
 					files={rightPane.files}
@@ -320,7 +340,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					placeholder={`Search in ${rightPane.currentFolder.name}...`}
 				/>
 			)}
-			
+
 			{/* File preview overlay */}
 			{showFilePreview && previewFile && (
 				<FilePreview

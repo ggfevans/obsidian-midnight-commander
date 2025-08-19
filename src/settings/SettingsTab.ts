@@ -1,6 +1,7 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import MidnightCommanderPlugin from '../../main';
-import { BookmarkItem } from '../types/interfaces';
+import { ThemeManager } from '../utils/ThemeManager';
+import { VIEW_TYPE_MIDNIGHT_COMMANDER } from '../views/MidnightCommanderView';
 
 export class MidnightCommanderSettingTab extends PluginSettingTab {
 	plugin: MidnightCommanderPlugin;
@@ -19,66 +20,80 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName('Open view on startup')
-			.setDesc('Automatically open the Midnight Commander view when Obsidian starts.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.openViewOnStart)
-				.onChange(async (value) => {
-					this.plugin.settings.openViewOnStart = value;
-					await this.plugin.saveSettings();
-				}));
+			.setDesc(
+				'Automatically open the Midnight Commander view when Obsidian starts.'
+			)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.openViewOnStart)
+					.onChange(async value => {
+						this.plugin.settings.openViewOnStart = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName('Show hidden files')
 			.setDesc('Display files and folders that start with a dot (.).')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showHiddenFiles)
-				.onChange(async (value) => {
-					this.plugin.settings.showHiddenFiles = value;
-					await this.plugin.saveSettings();
-				}));
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.showHiddenFiles)
+					.onChange(async value => {
+						this.plugin.settings.showHiddenFiles = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName('Show breadcrumbs')
 			.setDesc('Display breadcrumb navigation at the top of each pane.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showBreadcrumbs)
-				.onChange(async (value) => {
-					this.plugin.settings.showBreadcrumbs = value;
-					await this.plugin.saveSettings();
-				}));
-		
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.showBreadcrumbs)
+					.onChange(async value => {
+						this.plugin.settings.showBreadcrumbs = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
 		new Setting(containerEl)
 			.setName('Center-align breadcrumbs')
 			.setDesc('Center-align the breadcrumb path within the header.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.centerBreadcrumbs)
-				.onChange(async (value) => {
-					this.plugin.settings.centerBreadcrumbs = value;
-					await this.plugin.saveSettings();
-				}));
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.centerBreadcrumbs)
+					.onChange(async value => {
+						this.plugin.settings.centerBreadcrumbs = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName('Auto-preview delay (ms)')
 			.setDesc('The delay in milliseconds before the auto-preview appears.')
-			.addText(text => text
-				.setPlaceholder('300')
-				.setValue(String(this.plugin.settings.previewDelay))
-				.onChange(async (value) => {
-					this.plugin.settings.previewDelay = Number(value);
-					await this.plugin.saveSettings();
-				}));
+			.addText(text =>
+				text
+					.setPlaceholder('300')
+					.setValue(String(this.plugin.settings.previewDelay))
+					.onChange(async value => {
+						this.plugin.settings.previewDelay = Number(value);
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName('Keymap profile')
 			.setDesc('Choose between default and Vim-style keybindings.')
-			.addDropdown(dropdown => dropdown
-				.addOption('default', 'Default')
-				.addOption('vim', 'Vim')
-				.setValue(this.plugin.settings.keymapProfile)
-				.onChange(async (value) => {
-					this.plugin.settings.keymapProfile = value as 'default' | 'vim';
-					await this.plugin.saveSettings();
-				}));
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('default', 'Default')
+					.addOption('vim', 'Vim')
+					.setValue(this.plugin.settings.keymapProfile)
+					.onChange(async value => {
+						this.plugin.settings.keymapProfile = value as 'default' | 'vim';
+						await this.plugin.saveSettings();
+					})
+			);
 
 		// === APPEARANCE & UI ===
 		containerEl.createEl('h3', { text: 'Appearance & UI' });
@@ -86,28 +101,145 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Show file icons')
 			.setDesc('Display file type icons next to file names.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.showFileIcons)
-				.onChange(async (value) => {
-					this.plugin.settings.showFileIcons = value;
-					await this.plugin.saveSettings();
-				}));
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.showFileIcons)
+					.onChange(async value => {
+						this.plugin.settings.showFileIcons = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		new Setting(containerEl)
 			.setName('Default active pane')
 			.setDesc('Which pane should be active when opening the view.')
-			.addDropdown(dropdown => dropdown
-				.addOption('left', 'Left Pane')
-				.addOption('right', 'Right Pane')
-				.setValue(this.plugin.settings.activePane)
-				.onChange(async (value) => {
-					this.plugin.settings.activePane = value as 'left' | 'right';
-					await this.plugin.saveSettings();
-				}));
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('left', 'Left Pane')
+					.addOption('right', 'Right Pane')
+					.setValue(this.plugin.settings.activePane)
+					.onChange(async value => {
+						this.plugin.settings.activePane = value as 'left' | 'right';
+						await this.plugin.saveSettings();
+					})
+			);
+
+		// === THEME & APPEARANCE ===
+		containerEl.createEl('h3', { text: 'Theme & Appearance' });
+
+		// Theme selection
+		const themeManager = new ThemeManager('.midnight-commander-view');
+		const availableThemes = themeManager.getAvailableThemes();
+
+		new Setting(containerEl)
+			.setName('Theme')
+			.setDesc('Choose a visual theme for the Midnight Commander interface.')
+			.addDropdown(dropdown => {
+				availableThemes.forEach(theme => {
+					dropdown.addOption(theme.id, theme.name);
+				});
+				dropdown
+					.setValue(this.plugin.settings.theme || 'default')
+					.onChange(async value => {
+						this.plugin.settings.theme = value;
+						await this.plugin.saveSettings();
+						this.applyThemeToActiveViews();
+					});
+			});
+
+		// Color scheme
+		new Setting(containerEl)
+			.setName('Color scheme')
+			.setDesc('Override the color scheme for the theme.')
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('auto', 'Auto (follow Obsidian)')
+					.addOption('light', 'Light')
+					.addOption('dark', 'Dark')
+					.setValue(this.plugin.settings.colorScheme || 'auto')
+					.onChange(async value => {
+						this.plugin.settings.colorScheme = value as
+							| 'auto'
+							| 'light'
+							| 'dark';
+						await this.plugin.saveSettings();
+						this.applyThemeToActiveViews();
+					})
+			);
+
+		// Font size
+		new Setting(containerEl)
+			.setName('Font size')
+			.setDesc('Adjust the font size for the file manager.')
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('small', 'Small')
+					.addOption('medium', 'Medium')
+					.addOption('large', 'Large')
+					.setValue(this.plugin.settings.fontSize || 'medium')
+					.onChange(async value => {
+						this.plugin.settings.fontSize = value as
+							| 'small'
+							| 'medium'
+							| 'large';
+						await this.plugin.saveSettings();
+						this.applyThemeToActiveViews();
+					})
+			);
+
+		// Font family
+		new Setting(containerEl)
+			.setName('Font family')
+			.setDesc(
+				'Custom font family for the file manager (leave empty for default).'
+			)
+			.addText(text =>
+				text
+					.setPlaceholder('e.g., "Monaco", "Consolas", monospace')
+					.setValue(this.plugin.settings.fontFamily || '')
+					.onChange(async value => {
+						this.plugin.settings.fontFamily = value;
+						await this.plugin.saveSettings();
+						this.applyThemeToActiveViews();
+					})
+			);
+
+		// Compact mode
+		new Setting(containerEl)
+			.setName('Compact mode')
+			.setDesc('Use compact spacing for a more dense file list.')
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.compactMode || false)
+					.onChange(async value => {
+						this.plugin.settings.compactMode = value;
+						await this.plugin.saveSettings();
+						this.applyThemeToActiveViews();
+					})
+			);
+
+		// Custom CSS overrides
+		new Setting(containerEl)
+			.setName('Custom CSS')
+			.setDesc('Advanced: Add custom CSS to override theme styles.')
+			.addTextArea(text => {
+				text
+					.setPlaceholder(
+						'/* Custom CSS rules */\n.midnight-commander-view {\n  /* Your styles here */\n}'
+					)
+					.setValue(this.plugin.settings.customCssOverrides || '')
+					.onChange(async value => {
+						this.plugin.settings.customCssOverrides = value;
+						await this.plugin.saveSettings();
+						this.applyThemeToActiveViews();
+					});
+				text.inputEl.rows = 6;
+				text.inputEl.style.fontFamily = 'monospace';
+			});
 
 		// === KEYBOARD SHORTCUTS ===
 		containerEl.createEl('h3', { text: 'Keyboard Shortcuts' });
-		
+
 		const shortcutsDesc = containerEl.createDiv();
 		shortcutsDesc.innerHTML = `
 			<p><strong>Navigation:</strong></p>
@@ -152,15 +284,15 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 
 		// === BOOKMARKS MANAGEMENT ===
 		containerEl.createEl('h3', { text: 'Bookmarks' });
-		
+
 		new Setting(containerEl)
 			.setName('Manage bookmarks')
 			.setDesc('Add, edit, or remove folder bookmarks.')
-			.addButton(button => button
-				.setButtonText('Open Bookmark Manager')
-				.onClick(() => {
+			.addButton(button =>
+				button.setButtonText('Open Bookmark Manager').onClick(() => {
 					this.showBookmarkManager();
-				}));
+				})
+			);
 
 		this.displayBookmarksList(containerEl);
 
@@ -170,16 +302,18 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 		new Setting(containerEl)
 			.setName('Enable Vim bindings')
 			.setDesc('Use Vim-style navigation keys (h,j,k,l) for file navigation.')
-			.addToggle(toggle => toggle
-				.setValue(this.plugin.settings.vimBindings)
-				.onChange(async (value) => {
-					this.plugin.settings.vimBindings = value;
-					await this.plugin.saveSettings();
-				}));
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.vimBindings)
+					.onChange(async value => {
+						this.plugin.settings.vimBindings = value;
+						await this.plugin.saveSettings();
+					})
+			);
 
 		// === HELP & DOCUMENTATION ===
 		containerEl.createEl('h3', { text: 'Help & Documentation' });
-		
+
 		const helpDesc = containerEl.createDiv();
 		helpDesc.innerHTML = `
 			<p>For more information and advanced usage tips, visit the plugin documentation.</p>
@@ -197,27 +331,38 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 	 * Display the list of current bookmarks
 	 */
 	private displayBookmarksList(containerEl: HTMLElement) {
-		const bookmarksContainer = containerEl.createDiv({ cls: 'bookmarks-container' });
-		
-		if (!this.plugin.settings.bookmarks || this.plugin.settings.bookmarks.length === 0) {
-			bookmarksContainer.createEl('p', { text: 'No bookmarks saved yet. Use Ctrl+B in the file manager to bookmark folders.' });
+		const bookmarksContainer = containerEl.createDiv({
+			cls: 'bookmarks-container',
+		});
+
+		if (
+			!this.plugin.settings.bookmarks ||
+			this.plugin.settings.bookmarks.length === 0
+		) {
+			bookmarksContainer.createEl('p', {
+				text: 'No bookmarks saved yet. Use Ctrl+B in the file manager to bookmark folders.',
+			});
 			return;
 		}
 
 		bookmarksContainer.createEl('h4', { text: 'Current Bookmarks:' });
-		
+
 		this.plugin.settings.bookmarks.forEach((bookmark, index) => {
 			const bookmarkEl = bookmarksContainer.createDiv({ cls: 'bookmark-item' });
-			bookmarkEl.style.cssText = 'display: flex; align-items: center; margin: 5px 0; padding: 5px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
-			
+			bookmarkEl.style.cssText =
+				'display: flex; align-items: center; margin: 5px 0; padding: 5px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
+
 			const nameEl = bookmarkEl.createSpan({ text: bookmark.name });
-			nameEl.style.cssText = 'flex-grow: 1; margin-right: 10px; font-weight: bold;';
-			
+			nameEl.style.cssText =
+				'flex-grow: 1; margin-right: 10px; font-weight: bold;';
+
 			const pathEl = bookmarkEl.createSpan({ text: bookmark.path });
-			pathEl.style.cssText = 'color: var(--text-muted); margin-right: 10px; font-size: 0.9em;';
-			
+			pathEl.style.cssText =
+				'color: var(--text-muted); margin-right: 10px; font-size: 0.9em;';
+
 			const deleteBtn = bookmarkEl.createEl('button', { text: '×' });
-			deleteBtn.style.cssText = 'background: none; border: none; color: var(--text-error); cursor: pointer; font-size: 16px; width: 24px; height: 24px;';
+			deleteBtn.style.cssText =
+				'background: none; border: none; color: var(--text-error); cursor: pointer; font-size: 16px; width: 24px; height: 24px;';
 			deleteBtn.title = 'Remove bookmark';
 			deleteBtn.onclick = async () => {
 				this.plugin.settings.bookmarks!.splice(index, 1);
@@ -244,7 +389,7 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 			align-items: center;
 			justify-content: center;
 		`;
-		
+
 		const dialog = modal.createDiv();
 		dialog.style.cssText = `
 			background: var(--background-primary);
@@ -255,87 +400,121 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 			max-height: 80vh;
 			overflow-y: auto;
 		`;
-		
+
 		dialog.createEl('h3', { text: 'Bookmark Manager' });
-		
+
 		// Add new bookmark section
 		const addSection = dialog.createDiv();
 		addSection.createEl('h4', { text: 'Add New Bookmark' });
-		
-		const nameInput = addSection.createEl('input', { type: 'text', placeholder: 'Bookmark name' });
-		nameInput.style.cssText = 'width: 100%; margin: 5px 0; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
-		
-		const pathInput = addSection.createEl('input', { type: 'text', placeholder: 'Folder path' });
-		pathInput.style.cssText = 'width: 100%; margin: 5px 0; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
-		
+
+		const nameInput = addSection.createEl('input', {
+			type: 'text',
+			placeholder: 'Bookmark name',
+		});
+		nameInput.style.cssText =
+			'width: 100%; margin: 5px 0; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
+
+		const pathInput = addSection.createEl('input', {
+			type: 'text',
+			placeholder: 'Folder path',
+		});
+		pathInput.style.cssText =
+			'width: 100%; margin: 5px 0; padding: 8px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
+
 		const addBtn = addSection.createEl('button', { text: 'Add Bookmark' });
-		addBtn.style.cssText = 'margin: 10px 5px 10px 0; padding: 8px 16px; background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer;';
-		
+		addBtn.style.cssText =
+			'margin: 10px 5px 10px 0; padding: 8px 16px; background: var(--interactive-accent); color: var(--text-on-accent); border: none; border-radius: 3px; cursor: pointer;';
+
 		addBtn.onclick = async () => {
 			const name = nameInput.value.trim();
 			const path = pathInput.value.trim();
-			
+
 			if (name && path) {
 				if (!this.plugin.settings.bookmarks) {
 					this.plugin.settings.bookmarks = [];
 				}
-				
+
 				this.plugin.settings.bookmarks.push({ name, path });
 				await this.plugin.saveSettings();
-				
+
 				nameInput.value = '';
 				pathInput.value = '';
-				
+
 				// Refresh the dialog
 				document.body.removeChild(modal);
 				this.showBookmarkManager();
 			}
 		};
-		
+
 		// Current bookmarks section
-		if (this.plugin.settings.bookmarks && this.plugin.settings.bookmarks.length > 0) {
+		if (
+			this.plugin.settings.bookmarks &&
+			this.plugin.settings.bookmarks.length > 0
+		) {
 			dialog.createEl('h4', { text: 'Current Bookmarks' });
-			
+
 			this.plugin.settings.bookmarks.forEach((bookmark, index) => {
 				const bookmarkEl = dialog.createDiv();
-				bookmarkEl.style.cssText = 'display: flex; align-items: center; margin: 5px 0; padding: 10px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
-				
+				bookmarkEl.style.cssText =
+					'display: flex; align-items: center; margin: 5px 0; padding: 10px; border: 1px solid var(--background-modifier-border); border-radius: 3px;';
+
 				const infoDiv = bookmarkEl.createDiv();
 				infoDiv.style.cssText = 'flex-grow: 1;';
-				
-				infoDiv.createEl('div', { text: bookmark.name }).style.cssText = 'font-weight: bold; margin-bottom: 2px;';
-				infoDiv.createEl('div', { text: bookmark.path }).style.cssText = 'color: var(--text-muted); font-size: 0.9em;';
-				
+
+				infoDiv.createEl('div', { text: bookmark.name }).style.cssText =
+					'font-weight: bold; margin-bottom: 2px;';
+				infoDiv.createEl('div', { text: bookmark.path }).style.cssText =
+					'color: var(--text-muted); font-size: 0.9em;';
+
 				const deleteBtn = bookmarkEl.createEl('button', { text: 'Remove' });
-				deleteBtn.style.cssText = 'margin-left: 10px; padding: 5px 10px; background: var(--text-error); color: white; border: none; border-radius: 3px; cursor: pointer;';
+				deleteBtn.style.cssText =
+					'margin-left: 10px; padding: 5px 10px; background: var(--text-error); color: white; border: none; border-radius: 3px; cursor: pointer;';
 				deleteBtn.onclick = async () => {
 					this.plugin.settings.bookmarks!.splice(index, 1);
 					await this.plugin.saveSettings();
-					
+
 					// Refresh the dialog
 					document.body.removeChild(modal);
 					this.showBookmarkManager();
 				};
 			});
 		}
-		
+
 		// Close button
 		const closeBtn = dialog.createEl('button', { text: 'Close' });
-		closeBtn.style.cssText = 'margin-top: 20px; padding: 8px 16px; background: var(--background-modifier-border); border: none; border-radius: 3px; cursor: pointer;';
+		closeBtn.style.cssText =
+			'margin-top: 20px; padding: 8px 16px; background: var(--background-modifier-border); border: none; border-radius: 3px; cursor: pointer;';
 		closeBtn.onclick = () => {
 			document.body.removeChild(modal);
 			this.display(); // Refresh the main settings display
 		};
-		
+
 		// Close on background click
-		modal.onclick = (e) => {
+		modal.onclick = e => {
 			if (e.target === modal) {
 				document.body.removeChild(modal);
 				this.display();
 			}
 		};
-		
+
 		document.body.appendChild(modal);
 		nameInput.focus();
+	}
+
+	/**
+	 * Apply theme changes to all active Midnight Commander views
+	 */
+	private applyThemeToActiveViews() {
+		const leaves = this.app.workspace.getLeavesOfType(
+			VIEW_TYPE_MIDNIGHT_COMMANDER
+		);
+		if (leaves.length > 0) {
+			leaves.forEach(leaf => {
+				const view = leaf.view as any;
+				if (view && typeof view.applyTheme === 'function') {
+					view.applyTheme();
+				}
+			});
+		}
 	}
 }
