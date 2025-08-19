@@ -10,6 +10,8 @@ import { FolderMenu } from '../core/FolderMenu';
 import { PopupMenu } from '../core/PopupMenu';
 import { NavigationService } from '../services/NavigationService';
 import { EventManager } from '../utils/EventManager';
+import * as path from 'path';
+import { exec } from 'child_process';
 
 export const VIEW_TYPE_MIDNIGHT_COMMANDER = 'midnight-commander-view';
 
@@ -194,7 +196,7 @@ export class MidnightCommanderView extends ItemView {
 				return false;
 			});
 			
-        		// Context menu shortcut
+			// Context menu shortcut
 			this.scope.register([], "\\", (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showContextMenuForSelected();
@@ -816,6 +818,21 @@ export class MidnightCommanderView extends ItemView {
 						}
 					});
 			});
+
+			// Add "Copy Link" for files  
+			if (file instanceof TFile) {
+				menu.addItem((item) => {
+					item.setTitle('Copy Link')
+						.setIcon('link')
+						.onClick(async () => {
+							try {
+								await this.fileOperations.copyMarkdownLink(file);
+							} catch (error) {
+								console.error('Failed to copy link:', error);
+							}
+						});
+				});
+			}
 
 			menu.addSeparator();
 		}
@@ -1785,15 +1802,14 @@ export class MidnightCommanderView extends ItemView {
 	/**
 	 * Reveal file or folder in system file explorer using platform-specific commands
 	 */
-	private async revealInFileExplorer(path: string) {
+	private async revealInFileExplorer(filePath: string) {
 		try {
 			// Get the full absolute path
 			// Use path property which exists on FileSystemAdapter in Obsidian
 			const vaultPath = (this.app.vault.adapter as any).path || '';
-			const fullPath = require('path').resolve(vaultPath, path);
+			const fullPath = path.resolve(vaultPath, filePath);
 			
 			// Detect platform and use appropriate command
-			const { exec } = require('child_process');
 			let command: string;
 			
 			if (process.platform === 'win32') {
@@ -1808,8 +1824,8 @@ export class MidnightCommanderView extends ItemView {
 				const fileManagers = [
 					`nautilus --select "${fullPath}"`,
 					`dolphin --select "${fullPath}"`,
-					`thunar "${require('path').dirname(fullPath)}"`,
-					`xdg-open "${require('path').dirname(fullPath)}"`
+					`thunar "${path.dirname(fullPath)}"`,
+					`xdg-open "${path.dirname(fullPath)}"`
 				];
 				
 				// Try each file manager until one succeeds
@@ -1829,7 +1845,7 @@ export class MidnightCommanderView extends ItemView {
 				}
 				
 				// If no file manager worked, fall back to xdg-open with directory
-				command = `xdg-open "${require('path').dirname(fullPath)}"`;
+				command = `xdg-open "${path.dirname(fullPath)}"`;
 			}
 			
 			// Execute the command
@@ -1852,8 +1868,7 @@ export class MidnightCommanderView extends ItemView {
 	 */
 	private revealParentDirectory(fullPath: string) {
 		try {
-			const { exec } = require('child_process');
-			const parentDir = require('path').dirname(fullPath);
+			const parentDir = path.dirname(fullPath);
 			let command: string;
 			
 			if (process.platform === 'win32') {
