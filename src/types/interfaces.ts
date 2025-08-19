@@ -33,6 +33,7 @@ export interface PaneState {
 	selectedIndex: number;
 	selectedFiles: Set<string>;
 	isActive: boolean;
+	lastClickedIndex?: number; // Track anchor point for range selection
 }
 
 export interface FileClickOptions {

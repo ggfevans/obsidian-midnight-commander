@@ -131,6 +131,9 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 			<p><strong>Selection:</strong></p>
 			<ul>
 				<li><kbd>Space</kbd> - Toggle file selection</li>
+				<li><kbd>Shift+Click</kbd> - Range selection from last clicked item</li>
+				<li><kbd>Ctrl+Click</kbd> - Add/remove individual files to selection</li>
+				<li><kbd>Shift+↑/↓</kbd> - Extend selection up/down</li>
 				<li><kbd>Ctrl+A</kbd> - Select all</li>
 				<li><kbd>Ctrl+D</kbd> - Deselect all</li>
 				<li><kbd>Ctrl+Shift+I</kbd> - Invert selection</li>

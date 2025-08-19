@@ -125,6 +125,19 @@ export class MidnightCommanderView extends ItemView {
 				return false;
 			});
 			
+			// Shift+Arrow keys for range selection
+			this.scope.register(["Shift"], "ArrowUp", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.extendSelection(-1);
+				return false;
+			});
+			
+			this.scope.register(["Shift"], "ArrowDown", (evt: KeyboardEvent) => {
+				evt.preventDefault();
+				this.extendSelection(1);
+				return false;
+			});
+			
 			this.scope.register([], "ArrowLeft", (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateUp();
@@ -534,6 +547,35 @@ export class MidnightCommanderView extends ItemView {
 		const activePane = this.getActivePane();
 		const newIndex = Math.max(0, Math.min(activePane.files.length - 1, activePane.selectedIndex + direction));
 		activePane.selectedIndex = newIndex;
+		// Clear multi-selection on regular arrow navigation
+		activePane.selectedFiles.clear();
+		// Update last clicked index for future range selections
+		activePane.lastClickedIndex = newIndex;
+		this.renderDualPane();
+	}
+
+	private extendSelection(direction: number) {
+		const activePane = this.getActivePane();
+		const newIndex = Math.max(0, Math.min(activePane.files.length - 1, activePane.selectedIndex + direction));
+		
+		// Initialize lastClickedIndex if not set
+		if (activePane.lastClickedIndex === undefined) {
+			activePane.lastClickedIndex = activePane.selectedIndex;
+		}
+		
+		// Create range selection from lastClickedIndex to new index
+		const start = Math.min(activePane.lastClickedIndex, newIndex);
+		const end = Math.max(activePane.lastClickedIndex, newIndex);
+		
+		const newSelection = new Set<string>();
+		for (let i = start; i <= end; i++) {
+			if (i >= 0 && i < activePane.files.length) {
+				newSelection.add(activePane.files[i].path);
+			}
+		}
+		
+		activePane.selectedIndex = newIndex;
+		activePane.selectedFiles = newSelection;
 		this.renderDualPane();
 	}
 
