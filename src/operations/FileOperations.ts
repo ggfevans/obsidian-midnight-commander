@@ -1,39 +1,82 @@
 import { App, TAbstractFile, TFolder, TFile, Notice, Modal } from 'obsidian';
+
+// Module augmentation to access FileManager's private prompt methods
+declare module "obsidian" {
+    interface FileManager {
+        promptForFolderDeletion(folder: TFolder): void;
+        promptForFileDeletion(file: TFile): void;
+    }
+}
 import { FileCache } from '../utils/FileCache';
 import { BatchOperations, runInBatch } from '../utils/BatchOperations';
+import { NotificationManager, withNotification, withErrorHandling } from '../utils/NotificationManager';
 
 export class FileOperations {
     constructor(private app: App, private fileCache?: FileCache) {}
 
     /**
-     * Copy files to target folder
+     * Copy files to target folder with progress tracking
      */
     async copyFiles(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         if (files.length === 0) {
-            new Notice('No files selected for copying');
+            NotificationManager.warning('No files selected for copying');
             return;
         }
 
+        return await withNotification(
+            this.executeCopyOperation(files, targetFolder),
+            {
+                errorMessage: 'Failed to copy files',
+                successMessage: `Successfully copied ${files.length} item(s) to ${targetFolder.name}`,
+                showProgress: files.length > 5,
+                progressMessage: `Copying ${files.length} files...`
+            }
+        );
+    }
+
+    private async executeCopyOperation(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
+        const progressNotification = files.length > 3 ? 
+            NotificationManager.progress(`Copying files...`) : null;
+
         try {
-            const operations = files.map(file => this.copyFile(file, targetFolder));
-            await Promise.all(operations);
-            new Notice(`Copied ${files.length} item(s) to ${targetFolder.path}`);
-        } catch (error) {
-            console.error('Error copying files:', error);
-            new Notice(`Error copying files: ${error.message}`, 5000);
-            throw error;
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                if (progressNotification) {
+                    const progress = ((i + 1) / files.length) * 100;
+                    progressNotification.update(`Copying ${file.name}...`, progress);
+                }
+                
+                await this.copyFile(file, targetFolder);
+            }
+        } finally {
+            if (progressNotification) {
+                progressNotification.hide();
+            }
         }
     }
 
     /**
-     * Move files to target folder using batch operations
+     * Move files to target folder using batch operations with progress tracking
      */
     async moveFiles(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         if (files.length === 0) {
-            new Notice('No files selected for moving');
+            NotificationManager.warning('No files selected for moving');
             return;
         }
 
+        return await withNotification(
+            this.executeMoveOperation(files, targetFolder),
+            {
+                errorMessage: 'Failed to move files',
+                successMessage: `Successfully moved ${files.length} item(s) to ${targetFolder.name}`,
+                showProgress: files.length > 5,
+                progressMessage: `Moving ${files.length} files...`
+            }
+        );
+    }
+
+    private async executeMoveOperation(files: TAbstractFile[], targetFolder: TFolder): Promise<void> {
         console.time(`[FileOperations] Move ${files.length} files`);
         console.log(`[FileOperations] Starting batch move of ${files.length} files to ${targetFolder.path}`);
 
@@ -45,55 +88,30 @@ export class FileOperations {
                     batch.addRenameOperation(file, targetPath);
                 }
             ));
-            
-            new Notice(`Moved ${files.length} item(s) to ${targetFolder.path}`);
-        } catch (error) {
-            console.error('Error moving files:', error);
-            new Notice(`Error moving files: ${error.message}`, 5000);
-            throw error;
         } finally {
             console.timeEnd(`[FileOperations] Move ${files.length} files`);
         }
     }
 
     /**
-     * Delete files with confirmation using batch operations
+     * Delete files using Obsidian's FileManager prompt methods
      */
     async deleteFiles(files: TAbstractFile[]): Promise<void> {
         if (files.length === 0) {
-            new Notice('No files selected for deletion');
             return;
         }
 
-        // Show confirmation dialog
-        const confirmed = await this.confirmDeletion(files);
-        if (!confirmed) return;
-
-        console.time(`[FileOperations] Delete ${files.length} files`);
-        console.log(`[FileOperations] Starting batch deletion of ${files.length} files`);
-
-        try {
-            // Use batch operations for better performance with metadata cache optimization
-            await runInBatch(this.app, files.map(file => 
-                (batch: BatchOperations) => {
-                    // Note: FileManager.trashFile is safer for TFiles, but we need custom operations for folders
-                    if (file instanceof TFile) {
-                        batch.addCustomOperation(() => this.app.fileManager.trashFile(file));
-                    } else if (file instanceof TFolder) {
-                        batch.addDeleteOperation(file);
-                    }
-                }
-            ));
-            
-            new Notice(`Deleted ${files.length} item(s)`);
-        } catch (error) {
-            console.error('Error deleting files:', error);
-            new Notice(`Error deleting files: ${error.message}`, 5000);
-            throw error;
-        } finally {
-            console.timeEnd(`[FileOperations] Delete ${files.length} files`);
+        // Use FileManager's prompt methods which handle confirmation dialogs
+        // and respect user preferences automatically
+        for (const file of files) {
+            if (file instanceof TFile) {
+                await this.app.fileManager.promptForFileDeletion(file);
+            } else if (file instanceof TFolder) {
+                await this.app.fileManager.promptForFolderDeletion(file);
+            }
         }
     }
+
 
     /**
      * Create a new folder
@@ -256,19 +274,6 @@ export class FileOperations {
         return targetPath;
     }
 
-    private async confirmDeletion(files: TAbstractFile[]): Promise<boolean> {
-        return new Promise((resolve) => {
-            const modal = new ConfirmationModal(
-                this.app,
-                'Confirm Deletion',
-                `Are you sure you want to delete ${files.length} item(s)?`,
-                'Delete',
-                'Cancel',
-                (result) => resolve(result)
-            );
-            modal.open();
-        });
-    }
 
     private async promptForName(message: string, defaultValue: string = ''): Promise<string | null> {
         return new Promise((resolve) => {
@@ -420,45 +425,3 @@ class TextInputModal extends Modal {
     }
 }
 
-class ConfirmationModal extends Modal {
-    constructor(
-        app: App,
-        private title: string,
-        private message: string,
-        private confirmText: string,
-        private cancelText: string,
-        private callback: (result: boolean) => void
-    ) {
-        super(app);
-    }
-
-    onOpen() {
-        const { contentEl } = this;
-        contentEl.empty();
-
-        contentEl.createEl('h2', { text: this.title });
-        contentEl.createEl('p', { text: this.message });
-
-        const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
-        
-        const confirmButton = buttonContainer.createEl('button', { 
-            text: this.confirmText,
-            cls: 'mod-warning'
-        });
-        confirmButton.addEventListener('click', () => {
-            this.close();
-            this.callback(true);
-        });
-
-        const cancelButton = buttonContainer.createEl('button', { text: this.cancelText });
-        cancelButton.addEventListener('click', () => {
-            this.close();
-            this.callback(false);
-        });
-    }
-
-    onClose() {
-        const { contentEl } = this;
-        contentEl.empty();
-    }
-}

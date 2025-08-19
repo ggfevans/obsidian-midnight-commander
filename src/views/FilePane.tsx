@@ -12,16 +12,57 @@ export const FilePane: React.FC<FilePaneProps> = ({
 	onFileContextMenu,
 	onNavigateToFolder,
 }) => {
+	// Helper function to select a range of files
+	const selectFileRange = (startIndex: number, endIndex: number): Set<string> => {
+		const newSelection = new Set<string>();
+		const start = Math.min(startIndex, endIndex);
+		const end = Math.max(startIndex, endIndex);
+		
+		for (let i = start; i <= end; i++) {
+			if (i >= 0 && i < paneState.files.length) {
+				newSelection.add(paneState.files[i].path);
+			}
+		}
+		
+		return newSelection;
+	};
 	const handleFileItemClick = (file: TAbstractFile, event: React.MouseEvent) => {
 		// Activate this pane when clicked (if not already active)
 		if (!paneState.isActive) {
 			onStateChange({ isActive: true });
 		}
 		
-		// Update selection in pane state
 		const fileIndex = paneState.files.indexOf(file);
-		if (fileIndex >= 0) {
-			onStateChange({ selectedIndex: fileIndex });
+		if (fileIndex < 0) return;
+		
+		// Handle Shift+click for range selection
+		if (event.shiftKey && paneState.lastClickedIndex !== undefined) {
+			// Select range from lastClickedIndex to current index
+			const rangeSelection = selectFileRange(paneState.lastClickedIndex, fileIndex);
+			onStateChange({ 
+				selectedIndex: fileIndex,
+				selectedFiles: rangeSelection
+			});
+		} else if (event.ctrlKey || event.metaKey) {
+			// Ctrl+click for individual toggle selection
+			const newSelection = new Set(paneState.selectedFiles);
+			if (newSelection.has(file.path)) {
+				newSelection.delete(file.path);
+			} else {
+				newSelection.add(file.path);
+			}
+			onStateChange({ 
+				selectedIndex: fileIndex,
+				selectedFiles: newSelection,
+				lastClickedIndex: fileIndex
+			});
+		} else {
+			// Regular click - clear multi-selection and select single file
+			onStateChange({ 
+				selectedIndex: fileIndex,
+				selectedFiles: new Set(),
+				lastClickedIndex: fileIndex
+			});
 		}
 		
 		// Handle file click
@@ -79,10 +120,16 @@ export const FilePane: React.FC<FilePaneProps> = ({
 		overscan: 5, // Render 5 extra items outside viewport
 	});
 	
-	// Ensure selected item is visible when it changes
+	// Ensure selected item is visible when it changes, but only scroll if it's not already visible
 	React.useEffect(() => {
 		if (paneState.selectedIndex >= 0 && paneState.selectedIndex < files.length) {
-			virtualizer.scrollToIndex(paneState.selectedIndex, { align: 'auto' });
+			// Only scroll if the selected item is not currently visible
+			const virtualItems = virtualizer.getVirtualItems();
+			const isVisible = virtualItems.some(item => item.index === paneState.selectedIndex);
+			
+			if (!isVisible) {
+				virtualizer.scrollToIndex(paneState.selectedIndex, { align: 'center' });
+			}
 		}
 	}, [paneState.selectedIndex, virtualizer, files.length]);
 
