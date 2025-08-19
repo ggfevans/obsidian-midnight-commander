@@ -1,4 +1,11 @@
-import { ItemView, WorkspaceLeaf, TFolder, TAbstractFile, TFile, Menu } from 'obsidian';
+import {
+	ItemView,
+	WorkspaceLeaf,
+	TFolder,
+	TAbstractFile,
+	TFile,
+	Menu,
+} from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
 import { RecoilRoot } from 'recoil';
 import React from 'react';
@@ -10,6 +17,8 @@ import { FolderMenu } from '../core/FolderMenu';
 import { PopupMenu } from '../core/PopupMenu';
 import { NavigationService } from '../services/NavigationService';
 import { EventManager } from '../utils/EventManager';
+import { ThemeManager } from '../utils/ThemeManager';
+import { FilterOptions, FilterState } from '../types/interfaces';
 import * as path from 'path';
 import { exec } from 'child_process';
 
@@ -24,7 +33,8 @@ export class MidnightCommanderView extends ItemView {
 	fileOperations: FileOperations;
 	navigationService: NavigationService;
 	eventManager: EventManager;
-	
+	themeManager: ThemeManager;
+
 	// State persistence
 	private viewState: {
 		leftPath: string;
@@ -38,10 +48,10 @@ export class MidnightCommanderView extends ItemView {
 		super(leaf);
 		this.plugin = plugin;
 		this.settings = plugin.settings;
-		
+
 		// Initialize event manager for this view
 		this.eventManager = new EventManager(this.app, this);
-		
+
 		// Initialize pane states
 		const rootFolder = this.app.vault.getRoot();
 		this.leftPane = {
@@ -52,7 +62,7 @@ export class MidnightCommanderView extends ItemView {
 			selectedFiles: new Set(),
 			isActive: this.settings.activePane === 'left',
 		};
-		
+
 		this.rightPane = {
 			id: 'right',
 			currentFolder: rootFolder,
@@ -61,11 +71,11 @@ export class MidnightCommanderView extends ItemView {
 			selectedFiles: new Set(),
 			isActive: this.settings.activePane === 'right',
 		};
-		
+
 		// Initialize file operations with cache support
 		this.fileOperations = new FileOperations(this.app, plugin.fileCache);
 		this.navigationService = new NavigationService(this.app);
-		
+
 		// Initialize default view state
 		this.viewState = {
 			leftPath: rootFolder.path,
@@ -90,315 +100,322 @@ export class MidnightCommanderView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		this.destroy();
-		
+
 		// Restore view state if available
 		this.restoreViewState();
-		
+
+		// Initialize theme system
+		await this.initializeTheme();
+
 		this.renderDualPane();
-		
+
 		// Register view-specific events for file/workspace changes
 		this.setupWorkspaceEvents();
-		
+
 		// Register basic keyboard handlers - check if scope exists
 		if (this.scope) {
 			// Register the scope with our event manager for cleanup
 			this.eventManager.registerScope(this.scope);
-			this.scope.register([], "Tab", (evt: KeyboardEvent) => {
+			this.scope.register([], 'Tab', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.switchActivePane();
 				return false;
 			});
-			
-			this.scope.register([], "Enter", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'Enter', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.handleEnterKey();
 				return false;
 			});
-			
-			this.scope.register([], "ArrowUp", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'ArrowUp', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.moveSelection(-1);
 				return false;
 			});
-			
-			this.scope.register([], "ArrowDown", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'ArrowDown', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.moveSelection(1);
 				return false;
 			});
-			
+
 			// Shift+Arrow keys for range selection
-			this.scope.register(["Shift"], "ArrowUp", (evt: KeyboardEvent) => {
+			this.scope.register(['Shift'], 'ArrowUp', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.extendSelection(-1);
 				return false;
 			});
-			
-			this.scope.register(["Shift"], "ArrowDown", (evt: KeyboardEvent) => {
+
+			this.scope.register(['Shift'], 'ArrowDown', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.extendSelection(1);
 				return false;
 			});
-			
-			this.scope.register([], "ArrowLeft", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'ArrowLeft', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateUp();
 				return false;
 			});
-			
-			this.scope.register([], "ArrowRight", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'ArrowRight', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateInto();
 				return false;
 			});
-			
+
 			// F-key file operations (Midnight Commander style)
-			this.scope.register([], "F5", (evt: KeyboardEvent) => {
+			this.scope.register([], 'F5', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.copySelectedFiles();
 				return false;
 			});
-			
-			this.scope.register([], "F6", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'F6', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.moveSelectedFiles();
 				return false;
 			});
-			
-			this.scope.register([], "F7", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'F7', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.createNewFolder();
 				return false;
 			});
-			
-			this.scope.register([], "F8", (evt: KeyboardEvent) => {
+
+			this.scope.register([], 'F8', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.deleteSelectedFiles();
 				return false;
 			});
-			
+
 			// Multi-select operations
-			this.scope.register([], " ", (evt: KeyboardEvent) => {
+			this.scope.register([], ' ', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.toggleFileSelection();
 				return false;
 			});
-			
-			this.scope.register(["Ctrl"], "a", (evt: KeyboardEvent) => {
+
+			this.scope.register(['Ctrl'], 'a', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.selectAllFiles();
 				return false;
 			});
-			
-			this.scope.register(["Ctrl"], "d", (evt: KeyboardEvent) => {
+
+			this.scope.register(['Ctrl'], 'd', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.deselectAllFiles();
 				return false;
 			});
-			
+
 			// Context menu shortcut
-			this.scope.register([], "\\", (evt: KeyboardEvent) => {
+			this.scope.register([], '\\', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showContextMenuForSelected();
 				return false;
 			});
 
 			// Quick Explorer style folder navigation (F9)
-			this.scope.register([], "F9", (evt: KeyboardEvent) => {
+			this.scope.register([], 'F9', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showFolderMenu();
 				return false;
 			});
 
 			// Command palette (Ctrl+P)
-			this.scope.register(["Mod"], "p", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'p', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showCommandPalette();
 				return false;
 			});
 
 			// Quick search (Ctrl+F)
-			this.scope.register(["Mod"], "f", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'f', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.toggleQuickSearch();
 				return false;
 			});
 
 			// Alternative quick search shortcut (/)
-			this.scope.register([], "/", (evt: KeyboardEvent) => {
+			this.scope.register([], '/', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.toggleQuickSearch();
 				return false;
 			});
 
 			// File preview shortcut (Space)
-			this.scope.register(["Shift"], " ", (evt: KeyboardEvent) => {
+			this.scope.register(['Shift'], ' ', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showFilePreview();
 				return false;
 			});
 
 			// Alternative file preview shortcut (F3)
-			this.scope.register([], "F3", (evt: KeyboardEvent) => {
+			this.scope.register([], 'F3', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showFilePreview();
 				return false;
 			});
 			// File navigation commands (Ctrl+Shift combinations)
-			this.scope.register(["Mod", "Shift"], "ArrowUp", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 'ArrowUp', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateToFirstFile();
 				return false;
 			});
 
-			this.scope.register(["Mod", "Shift"], "ArrowDown", (evt: KeyboardEvent) => {
-				evt.preventDefault();
-				this.navigateToLastFile();
-				return false;
-			});
+			this.scope.register(
+				['Mod', 'Shift'],
+				'ArrowDown',
+				(evt: KeyboardEvent) => {
+					evt.preventDefault();
+					this.navigateToLastFile();
+					return false;
+				}
+			);
 
-			this.scope.register(["Mod"], "ArrowUp", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'ArrowUp', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateToPreviousFile();
 				return false;
 			});
 
-			this.scope.register(["Mod"], "ArrowDown", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'ArrowDown', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateToNextFile();
 				return false;
 			});
-			
+
 			// Enhanced keyboard shortcuts for better navigation
-			
+
 			// Bookmark management (Ctrl+B to bookmark, Ctrl+Shift+B to view bookmarks)
-			this.scope.register(["Mod"], "b", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'b', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.bookmarkCurrentFolder();
 				return false;
 			});
-			
-			this.scope.register(["Mod", "Shift"], "b", (evt: KeyboardEvent) => {
+
+			this.scope.register(['Mod', 'Shift'], 'b', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showBookmarkMenu();
 				return false;
 			});
-			
+
 			// Folder history navigation (Alt+Left/Right)
-			this.scope.register(["Alt"], "ArrowLeft", (evt: KeyboardEvent) => {
+			this.scope.register(['Alt'], 'ArrowLeft', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.goBackInHistory();
 				return false;
 			});
-			
-			this.scope.register(["Alt"], "ArrowRight", (evt: KeyboardEvent) => {
+
+			this.scope.register(['Alt'], 'ArrowRight', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.goForwardInHistory();
 				return false;
 			});
-			
+
 			// Recent folders (Ctrl+H)
-			this.scope.register(["Mod"], "h", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'h', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showRecentFoldersMenu();
 				return false;
 			});
-			
+
 			// Quick navigation to root (Ctrl+Home)
-			this.scope.register(["Mod"], "Home", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'Home', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.navigateToRoot();
 				return false;
 			});
-			
+
 			// Duplicate file/folder (Ctrl+Shift+D)
-			this.scope.register(["Mod", "Shift"], "d", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 'd', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.duplicateSelectedFiles();
 				return false;
 			});
-			
+
 			// Rename file/folder (F2)
-			this.scope.register([], "F2", (evt: KeyboardEvent) => {
+			this.scope.register([], 'F2', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.renameSelectedFile();
 				return false;
 			});
-			
+
 			// Properties/Info (F4)
-			this.scope.register([], "F4", (evt: KeyboardEvent) => {
+			this.scope.register([], 'F4', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showFileProperties();
 				return false;
 			});
-			
+
 			// Refresh current pane (F5 when not copying)
-			this.scope.register(["Ctrl"], "F5", (evt: KeyboardEvent) => {
+			this.scope.register(['Ctrl'], 'F5', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.refreshCurrentPane();
 				return false;
 			});
-			
+
 			// Focus address bar / Go to folder (Ctrl+L)
-			this.scope.register(["Mod"], "l", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'l', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showGoToFolderDialog();
 				return false;
 			});
-			
+
 			// Toggle hidden files (Ctrl+.)
-			this.scope.register(["Mod"], ".", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], '.', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.toggleHiddenFiles();
 				return false;
 			});
-			
+
 			// Sort menu (Ctrl+S)
-			this.scope.register(["Mod"], "s", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 's', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.showSortMenu();
 				return false;
 			});
-			
+
 			// Advanced selection shortcuts
-			
+
 			// Select files by pattern (Ctrl+Shift+A)
-			this.scope.register(["Mod", "Shift"], "a", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 'a', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.selectFilesByPattern();
 				return false;
 			});
-			
+
 			// Invert selection (Ctrl+Shift+I)
-			this.scope.register(["Mod", "Shift"], "i", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 'i', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.invertSelection();
 				return false;
 			});
-			
+
 			// Select all files (not folders) (Ctrl+Shift+F)
-			this.scope.register(["Mod", "Shift"], "f", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 'f', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.selectAllFiles();
 				return false;
 			});
-			
+
 			// Select all folders (Ctrl+Shift+D)
-			this.scope.register(["Mod", "Shift"], "o", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 'o', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.selectAllFolders();
 				return false;
 			});
-			
+
 			// Sync panes (Ctrl+Shift+S) - make both panes show same folder
-			this.scope.register(["Mod", "Shift"], "s", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod', 'Shift'], 's', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.syncPanes();
 				return false;
 			});
-			
+
 			// Open in new tab (Ctrl+Enter)
-			this.scope.register(["Mod"], "Enter", (evt: KeyboardEvent) => {
+			this.scope.register(['Mod'], 'Enter', (evt: KeyboardEvent) => {
 				evt.preventDefault();
 				this.openSelectedInNewTab();
 				return false;
@@ -419,10 +436,39 @@ export class MidnightCommanderView extends ItemView {
 						onFileClick={this.handleFileClick.bind(this)}
 						onFileContextMenu={this.handleFileContextMenu.bind(this)}
 						onNavigateToFolder={this.handleNavigateToFolder.bind(this)}
+						onFilterChange={this.handleFilterChange.bind(this)}
+						onFilterToggle={this.handleFilterToggle.bind(this)}
+						onFilterClear={this.handleFilterClear.bind(this)}
 					/>
 				</RecoilRoot>
 			</div>
 		);
+	}
+
+	/**
+	 * Initialize theme system
+	 */
+	async initializeTheme(): Promise<void> {
+		this.themeManager = new ThemeManager('.midnight-commander-view');
+		this.addChild(this.themeManager);
+		await this.themeManager.initialize(this.containerEl);
+		await this.applyTheme();
+	}
+
+	/**
+	 * Apply current theme settings
+	 */
+	async applyTheme(): Promise<void> {
+		if (!this.themeManager) return;
+
+		const settings = this.plugin.settings;
+		await this.themeManager.applyTheme(settings.theme, {
+			fontSize: settings.fontSize,
+			fontFamily: settings.fontFamily,
+			compactMode: settings.compactMode,
+			colorScheme: settings.colorScheme,
+			customCssOverrides: settings.customCssOverrides || '',
+		});
 	}
 
 	async onClose() {
@@ -430,7 +476,7 @@ export class MidnightCommanderView extends ItemView {
 		if (this.eventManager) {
 			this.eventManager.cleanup();
 		}
-		
+
 		this.destroy();
 	}
 
@@ -438,7 +484,7 @@ export class MidnightCommanderView extends ItemView {
 		if (this.root) {
 			this.root.unmount();
 		}
-		
+
 		// Call parent cleanup to ensure proper cleanup
 		if (this.eventManager) {
 			this.eventManager.cleanup();
@@ -450,17 +496,29 @@ export class MidnightCommanderView extends ItemView {
 	 */
 	private setupWorkspaceEvents() {
 		// Listen for file creation, deletion, and rename events
-		this.eventManager.registerAppEvent('vault', 'create', (file: TAbstractFile) => {
-			this.onVaultFileChange('create', file);
-		});
+		this.eventManager.registerAppEvent(
+			'vault',
+			'create',
+			(file: TAbstractFile) => {
+				this.onVaultFileChange('create', file);
+			}
+		);
 
-		this.eventManager.registerAppEvent('vault', 'delete', (file: TAbstractFile) => {
-			this.onVaultFileChange('delete', file);
-		});
+		this.eventManager.registerAppEvent(
+			'vault',
+			'delete',
+			(file: TAbstractFile) => {
+				this.onVaultFileChange('delete', file);
+			}
+		);
 
-		this.eventManager.registerAppEvent('vault', 'rename', (file: TAbstractFile, oldPath: string) => {
-			this.onVaultFileChange('rename', file, oldPath);
-		});
+		this.eventManager.registerAppEvent(
+			'vault',
+			'rename',
+			(file: TAbstractFile, oldPath: string) => {
+				this.onVaultFileChange('rename', file, oldPath);
+			}
+		);
 
 		// Listen for workspace layout changes
 		this.eventManager.registerAppEvent('workspace', 'layout-change', () => {
@@ -469,19 +527,35 @@ export class MidnightCommanderView extends ItemView {
 		});
 
 		// Listen for active leaf changes to update context
-		this.eventManager.registerAppEvent('workspace', 'active-leaf-change', (leaf: WorkspaceLeaf) => {
-			// Could be used to synchronize with active file in the future
-			console.debug('Active leaf changed:', leaf);
-		});
+		this.eventManager.registerAppEvent(
+			'workspace',
+			'active-leaf-change',
+			(leaf: WorkspaceLeaf) => {
+				// Could be used to synchronize with active file in the future
+				console.debug('Active leaf changed:', leaf);
+			}
+		);
 	}
 
 	/**
 	 * Handle vault file changes by refreshing affected panes
 	 */
-	private onVaultFileChange(eventType: 'create' | 'delete' | 'rename', file: TAbstractFile, oldPath?: string) {
+	private onVaultFileChange(
+		eventType: 'create' | 'delete' | 'rename',
+		file: TAbstractFile,
+		oldPath?: string
+	) {
 		// Check if the file change affects either pane
-		const leftNeedsRefresh = this.fileChangeAffectsPane(this.leftPane, file, oldPath);
-		const rightNeedsRefresh = this.fileChangeAffectsPane(this.rightPane, file, oldPath);
+		const leftNeedsRefresh = this.fileChangeAffectsPane(
+			this.leftPane,
+			file,
+			oldPath
+		);
+		const rightNeedsRefresh = this.fileChangeAffectsPane(
+			this.rightPane,
+			file,
+			oldPath
+		);
 
 		if (leftNeedsRefresh) {
 			this.refreshPane(this.leftPane);
@@ -495,7 +569,11 @@ export class MidnightCommanderView extends ItemView {
 	/**
 	 * Check if a file change affects a specific pane
 	 */
-	private fileChangeAffectsPane(pane: PaneState, file: TAbstractFile, oldPath?: string): boolean {
+	private fileChangeAffectsPane(
+		pane: PaneState,
+		file: TAbstractFile,
+		oldPath?: string
+	): boolean {
 		// Check if the file is in the current folder of the pane
 		if (file.parent === pane.currentFolder) {
 			return true;
@@ -536,18 +614,24 @@ export class MidnightCommanderView extends ItemView {
 		this.rightPane.isActive = !this.rightPane.isActive;
 		this.settings.activePane = this.leftPane.isActive ? 'left' : 'right';
 		this.plugin.saveSettings();
-		
+
 		// Clear multi-selections when switching panes to avoid confusion
 		// Keep only the current cursor selection
 		this.leftPane.selectedFiles.clear();
 		this.rightPane.selectedFiles.clear();
-		
+
 		this.renderDualPane(); // Re-render to update active state
 	}
 
 	private moveSelection(direction: number) {
 		const activePane = this.getActivePane();
-		const newIndex = Math.max(0, Math.min(activePane.files.length - 1, activePane.selectedIndex + direction));
+		const newIndex = Math.max(
+			0,
+			Math.min(
+				activePane.files.length - 1,
+				activePane.selectedIndex + direction
+			)
+		);
 		activePane.selectedIndex = newIndex;
 		// Clear multi-selection on regular arrow navigation
 		activePane.selectedFiles.clear();
@@ -558,24 +642,30 @@ export class MidnightCommanderView extends ItemView {
 
 	private extendSelection(direction: number) {
 		const activePane = this.getActivePane();
-		const newIndex = Math.max(0, Math.min(activePane.files.length - 1, activePane.selectedIndex + direction));
-		
+		const newIndex = Math.max(
+			0,
+			Math.min(
+				activePane.files.length - 1,
+				activePane.selectedIndex + direction
+			)
+		);
+
 		// Initialize lastClickedIndex if not set
 		if (activePane.lastClickedIndex === undefined) {
 			activePane.lastClickedIndex = activePane.selectedIndex;
 		}
-		
+
 		// Create range selection from lastClickedIndex to new index
 		const start = Math.min(activePane.lastClickedIndex, newIndex);
 		const end = Math.max(activePane.lastClickedIndex, newIndex);
-		
+
 		const newSelection = new Set<string>();
 		for (let i = start; i <= end; i++) {
 			if (i >= 0 && i < activePane.files.length) {
 				newSelection.add(activePane.files[i].path);
 			}
 		}
-		
+
 		activePane.selectedIndex = newIndex;
 		activePane.selectedFiles = newSelection;
 		this.renderDualPane();
@@ -612,48 +702,179 @@ export class MidnightCommanderView extends ItemView {
 		pane.files = this.getSortedFiles(folder);
 		pane.selectedIndex = 0;
 		pane.selectedFiles.clear();
-		
+
 		// Prefetch metadata for files in this folder for better performance
 		if (this.plugin.fileCache) {
 			this.plugin.fileCache.prefetchFolder(folder.path);
 		}
-		
+
+		// Update filter state if filter is active
+		if (pane.filter?.isActive) {
+			this.refreshFiles(pane);
+		}
+
+		this.renderDualPane();
+	}
+
+	/**
+	 * Refresh files for a pane, applying current filter if active
+	 */
+	private refreshFiles(pane: PaneState) {
+		const allFiles = this.getSortedFiles(pane.currentFolder);
+
+		// Update filter state if filter is active
+		if (pane.filter?.isActive) {
+			const filteredFiles = this.filterFiles(allFiles, pane.filter.options);
+			pane.filter = {
+				...pane.filter,
+				filteredFiles,
+				originalFiles: allFiles,
+			};
+			pane.files = filteredFiles;
+		} else {
+			pane.files = allFiles;
+		}
+
+		// Ensure selected index is still valid
+		if (pane.selectedIndex >= pane.files.length) {
+			pane.selectedIndex = Math.max(0, pane.files.length - 1);
+		}
+	}
+
+	/**
+	 * Handle filter changes from the filter component
+	 */
+	private handleFilterChange(paneId: 'left' | 'right', options: FilterOptions) {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+		const originalFiles = pane.filter?.originalFiles || pane.files;
+
+		// Apply filtering
+		const filteredFiles = this.filterFiles(originalFiles, options);
+
+		// Update filter state
+		const filterState: FilterState = {
+			isActive: true,
+			options,
+			filteredFiles,
+			originalFiles,
+		};
+
+		pane.filter = filterState;
+		pane.files = filteredFiles;
+
+		// Reset selection if current selection is out of bounds
+		if (pane.selectedIndex >= filteredFiles.length) {
+			pane.selectedIndex = Math.max(0, filteredFiles.length - 1);
+		}
+
+		this.renderDualPane();
+	}
+
+	/**
+	 * Handle filter toggle (enable/disable)
+	 */
+	private handleFilterToggle(paneId: 'left' | 'right', isActive: boolean) {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+
+		if (!isActive) {
+			// Disable filtering - restore original files
+			if (pane.filter?.originalFiles) {
+				pane.files = pane.filter.originalFiles;
+			}
+			pane.filter = undefined;
+		} else if (!pane.filter) {
+			// Enable filtering with default options
+			const defaultOptions: FilterOptions = {
+				query: '',
+				isRegex: false,
+				isGlob: false,
+				caseSensitive: false,
+				showFoldersOnly: false,
+				showFilesOnly: false,
+			};
+			this.handleFilterChange(paneId, defaultOptions);
+			return; // handleFilterChange will call renderDualPane
+		} else {
+			// Toggle existing filter state
+			pane.filter.isActive = isActive;
+			if (isActive) {
+				// Re-apply current filter
+				this.handleFilterChange(paneId, pane.filter.options);
+				return; // handleFilterChange will call renderDualPane
+			} else {
+				// Restore original files
+				if (pane.filter.originalFiles) {
+					pane.files = pane.filter.originalFiles;
+				}
+			}
+		}
+
+		this.renderDualPane();
+	}
+
+	/**
+	 * Handle filter clear
+	 */
+	private handleFilterClear(paneId: 'left' | 'right') {
+		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
+
+		if (pane.filter) {
+			// Reset to original files
+			if (pane.filter.originalFiles) {
+				pane.files = pane.filter.originalFiles;
+			}
+			pane.filter = undefined;
+		}
+
 		this.renderDualPane();
 	}
 
 	// Event handlers for React components
-	private handlePaneStateChange(paneId: 'left' | 'right', newState: Partial<PaneState>) {
+	private handlePaneStateChange(
+		paneId: 'left' | 'right',
+		newState: Partial<PaneState>
+	) {
 		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
-		
+
 		// Handle pane activation - when one pane becomes active, deactivate the other
 		if (newState.isActive === true) {
 			const otherPane = paneId === 'left' ? this.rightPane : this.leftPane;
 			otherPane.isActive = false;
 			this.settings.activePane = paneId;
 			this.plugin.saveSettings();
-			
+
 			// Clear multi-selections when switching panes to avoid confusion
 			this.leftPane.selectedFiles.clear();
 			this.rightPane.selectedFiles.clear();
 		}
-		
+
 		Object.assign(pane, newState);
 		this.renderDualPane();
 	}
 
-	private handleFileClick(file: TAbstractFile, paneId: 'left' | 'right', options?: any) {
+	private handleFileClick(
+		file: TAbstractFile,
+		paneId: 'left' | 'right',
+		options?: any
+	) {
 		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
-		
+
 		if (file instanceof TFolder) {
 			this.navigateToFolder(pane, file);
 		} else if (file instanceof TFile) {
 			// Open file
-			const leaf = options?.newTab ? this.app.workspace.getLeaf('tab') : this.app.workspace.getLeaf();
+			const leaf = options?.newTab
+				? this.app.workspace.getLeaf('tab')
+				: this.app.workspace.getLeaf();
 			leaf.openFile(file);
 		}
 	}
 
-	private handleFileContextMenu(file: TAbstractFile, paneId: 'left' | 'right', position: any) {
+	private handleFileContextMenu(
+		file: TAbstractFile,
+		paneId: 'left' | 'right',
+		position: any
+	) {
 		// Use Obsidian's native Menu class with comprehensive menu items
 		const activePane = this.getActivePane();
 		const menu = new Menu();
@@ -664,8 +885,9 @@ export class MidnightCommanderView extends ItemView {
 		// Add missing items that should be in folder context menus
 		if (file instanceof TFolder) {
 			// Add "New" items for folders at the top
-			menu.addItem((item) => {
-				item.setTitle('New note')
+			menu.addItem(item => {
+				item
+					.setTitle('New note')
 					.setIcon('edit')
 					.onClick(async () => {
 						// Create new note in this folder using FileOperations
@@ -685,8 +907,9 @@ export class MidnightCommanderView extends ItemView {
 					});
 			});
 
-			menu.addItem((item) => {
-				item.setTitle('New folder')
+			menu.addItem(item => {
+				item
+					.setTitle('New folder')
 					.setIcon('folder-plus')
 					.onClick(async () => {
 						// Create new folder
@@ -698,8 +921,9 @@ export class MidnightCommanderView extends ItemView {
 			menu.addSeparator();
 
 			// Add "Open in other pane" for folders
-			menu.addItem((item) => {
-				item.setTitle('Open in other pane')
+			menu.addItem(item => {
+				item
+					.setTitle('Open in other pane')
 					.setIcon('arrow-right-left')
 					.onClick(() => {
 						// Navigate the inactive pane to this folder
@@ -709,8 +933,9 @@ export class MidnightCommanderView extends ItemView {
 			});
 
 			// Add "Reveal in file explorer" for folders
-			menu.addItem((item) => {
-				item.setTitle('Reveal in file explorer')
+			menu.addItem(item => {
+				item
+					.setTitle('Reveal in file explorer')
 					.setIcon('external-link')
 					.onClick(() => {
 						// Show folder in system file explorer
@@ -721,8 +946,9 @@ export class MidnightCommanderView extends ItemView {
 			menu.addSeparator();
 
 			// Add "Make a copy" for folders
-			menu.addItem((item) => {
-				item.setTitle('Make a copy')
+			menu.addItem(item => {
+				item
+					.setTitle('Make a copy')
 					.setIcon('copy')
 					.onClick(async () => {
 						try {
@@ -735,12 +961,15 @@ export class MidnightCommanderView extends ItemView {
 			});
 
 			// Add "Search in folder"
-			menu.addItem((item) => {
-				item.setTitle('Search in folder')
+			menu.addItem(item => {
+				item
+					.setTitle('Search in folder')
 					.setIcon('search')
 					.onClick(() => {
 						// Open search with folder constraint
-						(this.app as any).internalPlugins.plugins['global-search'].instance.openGlobalSearch(`path:${file.path}`);
+						(this.app as any).internalPlugins.plugins[
+							'global-search'
+						].instance.openGlobalSearch(`path:${file.path}`);
 					});
 			});
 
@@ -748,8 +977,9 @@ export class MidnightCommanderView extends ItemView {
 		} else {
 			// For files, add "Open to side" and related options
 			if (file instanceof TFile) {
-				menu.addItem((item) => {
-					item.setTitle('Open to side')
+				menu.addItem(item => {
+					item
+						.setTitle('Open to side')
 						.setIcon('split-square-horizontal')
 						.onClick(() => {
 							// Open file in new pane to the side
@@ -758,8 +988,9 @@ export class MidnightCommanderView extends ItemView {
 						});
 				});
 
-				menu.addItem((item) => {
-					item.setTitle('Open in new tab')
+				menu.addItem(item => {
+					item
+						.setTitle('Open in new tab')
 						.setIcon('plus-square')
 						.onClick(() => {
 							// Open file in new tab
@@ -773,8 +1004,9 @@ export class MidnightCommanderView extends ItemView {
 
 			// Add "Open in other pane" for files
 			if (file instanceof TFile) {
-				menu.addItem((item) => {
-					item.setTitle('Open in other pane')
+				menu.addItem(item => {
+					item
+						.setTitle('Open in other pane')
 						.setIcon('arrow-right-left')
 						.onClick(() => {
 							// Navigate the inactive pane to this file's folder and select it
@@ -794,8 +1026,9 @@ export class MidnightCommanderView extends ItemView {
 			}
 
 			// Add "Reveal in file explorer" for files
-			menu.addItem((item) => {
-				item.setTitle('Reveal in file explorer')
+			menu.addItem(item => {
+				item
+					.setTitle('Reveal in file explorer')
 					.setIcon('external-link')
 					.onClick(() => {
 						// Show file in system file explorer
@@ -806,8 +1039,9 @@ export class MidnightCommanderView extends ItemView {
 			menu.addSeparator();
 
 			// Add "Make a copy" for files
-			menu.addItem((item) => {
-				item.setTitle('Make a copy')
+			menu.addItem(item => {
+				item
+					.setTitle('Make a copy')
 					.setIcon('copy')
 					.onClick(async () => {
 						try {
@@ -819,10 +1053,11 @@ export class MidnightCommanderView extends ItemView {
 					});
 			});
 
-			// Add "Copy Link" for files  
+			// Add "Copy Link" for files
 			if (file instanceof TFile) {
-				menu.addItem((item) => {
-					item.setTitle('Copy Link')
+				menu.addItem(item => {
+					item
+						.setTitle('Copy Link')
 						.setIcon('link')
 						.onClick(async () => {
 							try {
@@ -840,8 +1075,9 @@ export class MidnightCommanderView extends ItemView {
 		// Add Rename and Delete for both files and folders
 		// Note: We'll add these items regardless since we can't easily check existing items
 
-		menu.addItem((item) => {
-			item.setTitle('Rename...')
+		menu.addItem(item => {
+			item
+				.setTitle('Rename...')
 				.setIcon('pencil')
 				.onClick(async () => {
 					try {
@@ -853,8 +1089,9 @@ export class MidnightCommanderView extends ItemView {
 				});
 		});
 
-		menu.addItem((item) => {
-			item.setTitle('Delete')
+		menu.addItem(item => {
+			item
+				.setTitle('Delete')
 				.setIcon('trash')
 				.onClick(async () => {
 					await this.fileOperations.deleteFiles([file]);
@@ -872,11 +1109,11 @@ export class MidnightCommanderView extends ItemView {
 		const pane = paneId === 'left' ? this.leftPane : this.rightPane;
 		this.navigateToFolder(pane, folder);
 	}
-	
+
 	// ====================
 	// FILE OPERATIONS (F-KEY FUNCTIONALITY)
 	// ====================
-	
+
 	/**
 	 * F5 - Copy selected files from active pane to inactive pane
 	 */
@@ -884,7 +1121,7 @@ export class MidnightCommanderView extends ItemView {
 		const activePane = this.getActivePane();
 		const inactivePane = this.getInactivePane();
 		const selectedFiles = this.getSelectedFiles(activePane);
-		
+
 		if (selectedFiles.length === 0) {
 			// If no files are explicitly selected, use the currently highlighted file
 			const currentFile = activePane.files[activePane.selectedIndex];
@@ -892,16 +1129,19 @@ export class MidnightCommanderView extends ItemView {
 				selectedFiles.push(currentFile);
 			}
 		}
-		
+
 		try {
-			await this.fileOperations.copyFiles(selectedFiles, inactivePane.currentFolder);
+			await this.fileOperations.copyFiles(
+				selectedFiles,
+				inactivePane.currentFolder
+			);
 			// Refresh the inactive pane to show copied files
 			this.refreshPane(inactivePane);
 		} catch (error) {
 			console.error('Copy operation failed:', error);
 		}
 	}
-	
+
 	/**
 	 * F6 - Move selected files from active pane to inactive pane
 	 */
@@ -909,7 +1149,7 @@ export class MidnightCommanderView extends ItemView {
 		const activePane = this.getActivePane();
 		const inactivePane = this.getInactivePane();
 		const selectedFiles = this.getSelectedFiles(activePane);
-		
+
 		if (selectedFiles.length === 0) {
 			// If no files are explicitly selected, use the currently highlighted file
 			const currentFile = activePane.files[activePane.selectedIndex];
@@ -917,9 +1157,12 @@ export class MidnightCommanderView extends ItemView {
 				selectedFiles.push(currentFile);
 			}
 		}
-		
+
 		try {
-			await this.fileOperations.moveFiles(selectedFiles, inactivePane.currentFolder);
+			await this.fileOperations.moveFiles(
+				selectedFiles,
+				inactivePane.currentFolder
+			);
 			// Refresh both panes
 			this.refreshPane(activePane);
 			this.refreshPane(inactivePane);
@@ -927,15 +1170,17 @@ export class MidnightCommanderView extends ItemView {
 			console.error('Move operation failed:', error);
 		}
 	}
-	
+
 	/**
 	 * F7 - Create new folder in active pane
 	 */
 	private async createNewFolder() {
 		const activePane = this.getActivePane();
-		
+
 		try {
-			const newFolder = await this.fileOperations.createNewFolder(activePane.currentFolder);
+			const newFolder = await this.fileOperations.createNewFolder(
+				activePane.currentFolder
+			);
 			if (newFolder) {
 				// Refresh the active pane and select the new folder
 				this.refreshPane(activePane);
@@ -945,14 +1190,14 @@ export class MidnightCommanderView extends ItemView {
 			console.error('Create folder operation failed:', error);
 		}
 	}
-	
+
 	/**
 	 * F8 - Delete selected files
 	 */
 	private async deleteSelectedFiles() {
 		const activePane = this.getActivePane();
 		const selectedFiles = this.getSelectedFiles(activePane);
-		
+
 		if (selectedFiles.length === 0) {
 			// If no files are explicitly selected, use the currently highlighted file
 			const currentFile = activePane.files[activePane.selectedIndex];
@@ -960,7 +1205,7 @@ export class MidnightCommanderView extends ItemView {
 				selectedFiles.push(currentFile);
 			}
 		}
-		
+
 		try {
 			await this.fileOperations.deleteFiles(selectedFiles);
 			// Refresh the active pane
@@ -971,48 +1216,48 @@ export class MidnightCommanderView extends ItemView {
 			console.error('Delete operation failed:', error);
 		}
 	}
-	
+
 	// ====================
 	// MULTI-SELECT FUNCTIONALITY
 	// ====================
-	
+
 	/**
 	 * Space - Toggle selection of current file
 	 */
 	private toggleFileSelection() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile) {
 			if (activePane.selectedFiles.has(currentFile.path)) {
 				activePane.selectedFiles.delete(currentFile.path);
 			} else {
 				activePane.selectedFiles.add(currentFile.path);
 			}
-			
+
 			// Move to next file after selection
 			if (activePane.selectedIndex < activePane.files.length - 1) {
 				activePane.selectedIndex++;
 			}
-			
+
 			this.renderDualPane();
 		}
 	}
-	
+
 	/**
 	 * Ctrl+A - Select all files in active pane
 	 */
 	private selectAllFiles() {
 		const activePane = this.getActivePane();
 		activePane.selectedFiles.clear();
-		
+
 		for (const file of activePane.files) {
 			activePane.selectedFiles.add(file.path);
 		}
-		
+
 		this.renderDualPane();
 	}
-	
+
 	/**
 	 * Ctrl+D - Deselect all files in active pane
 	 */
@@ -1021,50 +1266,141 @@ export class MidnightCommanderView extends ItemView {
 		activePane.selectedFiles.clear();
 		this.renderDualPane();
 	}
-	
+
 	/**
 	 * \\ - Show context menu for selected file(s)
 	 */
 	private showContextMenuForSelected() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile) {
 			// Calculate position from the selected element
 			const paneElement = this.contentEl.querySelector(
-				activePane.id === 'left' ? '.file-pane:first-child' : '.file-pane:last-child'
+				activePane.id === 'left'
+					? '.file-pane:first-child'
+					: '.file-pane:last-child'
 			) as HTMLElement;
-			
+
 			if (paneElement) {
 				const rect = paneElement.getBoundingClientRect();
 				const position = {
 					x: rect.left + rect.width / 2,
-					y: rect.top + activePane.selectedIndex * 36 // Approximate position
+					y: rect.top + activePane.selectedIndex * 36, // Approximate position
 				};
 				this.handleFileContextMenu(currentFile, activePane.id, position);
 			}
 		}
 	}
-	
+
+	// ====================
+	// FILTER METHODS
+	// ====================
+
+	/**
+	 * Simple filter implementation for files
+	 */
+	private filterFiles(
+		files: TAbstractFile[],
+		options: FilterOptions
+	): TAbstractFile[] {
+		if (
+			!options.query.trim() &&
+			!options.showFoldersOnly &&
+			!options.showFilesOnly
+		) {
+			return files;
+		}
+
+		return files.filter(file => {
+			// Apply file type filters first
+			if (options.showFoldersOnly && !(file instanceof TFolder)) {
+				return false;
+			}
+			if (options.showFilesOnly && !(file instanceof TFile)) {
+				return false;
+			}
+
+			// If no query, just apply type filters
+			if (!options.query.trim()) {
+				return true;
+			}
+
+			// Apply query-based filtering
+			return this.matchesQuery(file, options);
+		});
+	}
+
+	/**
+	 * Check if a file matches the search query
+	 */
+	private matchesQuery(file: TAbstractFile, options: FilterOptions): boolean {
+		const fileName = file.name;
+		const query = options.query;
+
+		try {
+			if (options.isRegex) {
+				const flags = options.caseSensitive ? 'g' : 'gi';
+				const regex = new RegExp(query, flags);
+				return regex.test(fileName);
+			} else if (options.isGlob) {
+				const regex = this.globToRegex(query);
+				const flags = options.caseSensitive ? 'g' : 'gi';
+				const globRegex = new RegExp(regex, flags);
+				return globRegex.test(fileName);
+			} else {
+				// Simple text search
+				const searchText = options.caseSensitive
+					? fileName
+					: fileName.toLowerCase();
+				const searchQuery = options.caseSensitive ? query : query.toLowerCase();
+				return searchText.includes(searchQuery);
+			}
+		} catch (error) {
+			// Invalid regex/glob pattern, fall back to text search
+			const searchText = options.caseSensitive
+				? fileName
+				: fileName.toLowerCase();
+			const searchQuery = options.caseSensitive ? query : query.toLowerCase();
+			return searchText.includes(searchQuery);
+		}
+	}
+
+	/**
+	 * Convert glob pattern to regex
+	 */
+	private globToRegex(glob: string): string {
+		// Escape special regex characters except for glob wildcards
+		let regex = glob
+			.replace(/[.+^${}()|[\]\\]/g, '\\$&') // Escape regex special chars
+			.replace(/\*/g, '.*') // Convert * to .*
+			.replace(/\?/g, '.'); // Convert ? to .
+
+		// Handle character classes [abc] and ranges [a-z]
+		regex = regex.replace(/\\\[([^\]]*)\\\]/g, '[$1]');
+
+		return `^${regex}$`;
+	}
+
 	// ====================
 	// HELPER METHODS
 	// ====================
-	
+
 	/**
 	 * Get array of currently selected files in a pane
 	 */
 	private getSelectedFiles(pane: PaneState): TAbstractFile[] {
 		const selectedFiles: TAbstractFile[] = [];
-		
+
 		for (const file of pane.files) {
 			if (pane.selectedFiles.has(file.path)) {
 				selectedFiles.push(file);
 			}
 		}
-		
+
 		return selectedFiles;
 	}
-	
+
 	/**
 	 * Refresh a pane by reloading its file list
 	 */
@@ -1076,7 +1412,7 @@ export class MidnightCommanderView extends ItemView {
 		}
 		this.renderDualPane();
 	}
-	
+
 	/**
 	 * Select a file by name in the given pane
 	 */
@@ -1101,30 +1437,32 @@ export class MidnightCommanderView extends ItemView {
 			app: this.app,
 			folder: activePane.currentFolder,
 			showHiddenFiles: this.settings.showHiddenFiles,
-			onFileSelect: (file) => {
+			onFileSelect: file => {
 				if (file instanceof TFile) {
 					// Open the file
 					this.app.workspace.getLeaf().openFile(file);
 				}
 			},
-			onFolderNavigate: (folder) => {
+			onFolderNavigate: folder => {
 				// Navigate to the folder in active pane
 				this.navigateToFolder(activePane, folder);
 			},
 			enableAutoPreview: true,
-			previewDelay: 300
+			previewDelay: 300,
 		});
 
 		// Position menu next to the active pane
 		const paneElement = this.contentEl.querySelector(
-			activePane.id === 'left' ? '.file-pane:first-child' : '.file-pane:last-child'
+			activePane.id === 'left'
+				? '.file-pane:first-child'
+				: '.file-pane:last-child'
 		) as HTMLElement;
 
 		if (paneElement) {
 			folderMenu.cascade({
 				target: paneElement,
 				event: undefined,
-				onClose: () => folderMenu.hide()
+				onClose: () => folderMenu.hide(),
 			});
 		}
 	}
@@ -1145,7 +1483,7 @@ export class MidnightCommanderView extends ItemView {
 						// Refresh both panes
 						this.refreshPane(this.leftPane);
 						this.refreshPane(this.rightPane);
-					}
+					},
 				},
 				{
 					title: 'Switch to left pane',
@@ -1156,7 +1494,7 @@ export class MidnightCommanderView extends ItemView {
 						this.settings.activePane = 'left';
 						this.plugin.saveSettings();
 						this.renderDualPane();
-					}
+					},
 				},
 				{
 					title: 'Switch to right pane',
@@ -1167,14 +1505,14 @@ export class MidnightCommanderView extends ItemView {
 						this.settings.activePane = 'right';
 						this.plugin.saveSettings();
 						this.renderDualPane();
-					}
+					},
 				},
 				{
 					title: 'Refresh current pane',
 					icon: 'refresh-cw',
 					callback: () => {
 						this.refreshPane(this.getActivePane());
-					}
+					},
 				},
 				{
 					title: 'Go to vault root',
@@ -1183,51 +1521,51 @@ export class MidnightCommanderView extends ItemView {
 						const activePane = this.getActivePane();
 						const rootFolder = this.app.vault.getRoot();
 						this.navigateToFolder(activePane, rootFolder);
-					}
+					},
 				},
 				{
 					title: 'Create new folder...',
 					icon: 'folder-plus',
 					callback: () => {
 						this.createNewFolder();
-					}
+					},
 				},
 				{
 					title: 'Navigate to next file',
 					icon: 'arrow-down-circle',
 					callback: () => {
 						this.navigateToNextFile();
-					}
+					},
 				},
 				{
 					title: 'Navigate to previous file',
 					icon: 'arrow-up-circle',
 					callback: () => {
 						this.navigateToPreviousFile();
-					}
+					},
 				},
 				{
 					title: 'Go to first file',
 					icon: 'chevrons-up',
 					callback: () => {
 						this.navigateToFirstFile();
-					}
+					},
 				},
 				{
 					title: 'Go to last file',
 					icon: 'chevrons-down',
 					callback: () => {
 						this.navigateToLastFile();
-					}
-				}
-			]
+					},
+				},
+			],
 		});
 
 		// Position command palette in center of view
 		const rect = this.contentEl.getBoundingClientRect();
 		commandMenu.showAtPosition({
 			x: rect.left + rect.width / 2 - 200, // Center horizontally
-			y: rect.top + 100 // A bit down from top
+			y: rect.top + 100, // A bit down from top
 		});
 	}
 
@@ -1235,11 +1573,16 @@ export class MidnightCommanderView extends ItemView {
 	 * Toggle quick search overlay for current pane
 	 */
 	private toggleQuickSearch() {
-		// Call the global function exposed by DualPaneManager
-		if ((window as any).toggleQuickSearch) {
-			(window as any).toggleQuickSearch();
+		// Toggle filter for the active pane
+		const activePaneId = this.leftPane.isActive ? 'left' : 'right';
+		const activePane = this.getActivePane();
+
+		// If filter is not active, enable it with default options
+		if (!activePane.filter?.isActive) {
+			this.handleFilterToggle(activePaneId, true);
 		} else {
-			console.warn('Quick search toggle function not available');
+			// If filter is active, toggle it off
+			this.handleFilterToggle(activePaneId, false);
 		}
 	}
 
@@ -1264,9 +1607,13 @@ export class MidnightCommanderView extends ItemView {
 	private navigateToNextFile() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile instanceof TFile) {
-			const nextFile = this.navigationService.navigateFile(currentFile, 1, true);
+			const nextFile = this.navigationService.navigateFile(
+				currentFile,
+				1,
+				true
+			);
 			if (nextFile) {
 				this.selectAndNavigateToFile(nextFile);
 			}
@@ -1279,9 +1626,13 @@ export class MidnightCommanderView extends ItemView {
 	private navigateToPreviousFile() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile instanceof TFile) {
-			const prevFile = this.navigationService.navigateFile(currentFile, -1, true);
+			const prevFile = this.navigationService.navigateFile(
+				currentFile,
+				-1,
+				true
+			);
 			if (prevFile) {
 				this.selectAndNavigateToFile(prevFile);
 			}
@@ -1294,9 +1645,13 @@ export class MidnightCommanderView extends ItemView {
 	private navigateToFirstFile() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile instanceof TFile) {
-			const firstFile = this.navigationService.navigateFile(currentFile, -1, false);
+			const firstFile = this.navigationService.navigateFile(
+				currentFile,
+				-1,
+				false
+			);
 			if (firstFile) {
 				this.selectAndNavigateToFile(firstFile);
 			}
@@ -1309,9 +1664,13 @@ export class MidnightCommanderView extends ItemView {
 	private navigateToLastFile() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile instanceof TFile) {
-			const lastFile = this.navigationService.navigateFile(currentFile, 1, false);
+			const lastFile = this.navigationService.navigateFile(
+				currentFile,
+				1,
+				false
+			);
 			if (lastFile) {
 				this.selectAndNavigateToFile(lastFile);
 			}
@@ -1323,7 +1682,7 @@ export class MidnightCommanderView extends ItemView {
 	 */
 	private selectAndNavigateToFile(file: TFile) {
 		const activePane = this.getActivePane();
-		
+
 		// Check if file is in current folder
 		if (file.parent === activePane.currentFolder) {
 			// File is in current folder, just select it
@@ -1350,13 +1709,13 @@ export class MidnightCommanderView extends ItemView {
 	getViewData(): any {
 		// Update view state before returning
 		this.updateViewState();
-		
+
 		return {
 			leftPath: this.viewState.leftPath,
 			rightPath: this.viewState.rightPath,
 			activePane: this.viewState.activePane,
 			leftSelectedIndex: this.viewState.leftSelectedIndex,
-			rightSelectedIndex: this.viewState.rightSelectedIndex
+			rightSelectedIndex: this.viewState.rightSelectedIndex,
 		};
 	}
 
@@ -1370,7 +1729,7 @@ export class MidnightCommanderView extends ItemView {
 				rightPath: data.rightPath || this.app.vault.getRoot().path,
 				activePane: data.activePane || 'left',
 				leftSelectedIndex: data.leftSelectedIndex || 0,
-				rightSelectedIndex: data.rightSelectedIndex || 0
+				rightSelectedIndex: data.rightSelectedIndex || 0,
 			};
 		}
 	}
@@ -1381,11 +1740,13 @@ export class MidnightCommanderView extends ItemView {
 	private restoreViewState() {
 		try {
 			// Attempt to get folder for left pane
-			const leftFolder = this.app.vault.getAbstractFileByPath(this.viewState.leftPath);
+			const leftFolder = this.app.vault.getAbstractFileByPath(
+				this.viewState.leftPath
+			);
 			if (leftFolder instanceof TFolder) {
 				this.leftPane.currentFolder = leftFolder;
 				this.leftPane.files = this.getSortedFiles(leftFolder);
-				
+
 				// Restore selected index, ensuring it's within bounds
 				this.leftPane.selectedIndex = Math.min(
 					this.viewState.leftSelectedIndex,
@@ -1394,11 +1755,13 @@ export class MidnightCommanderView extends ItemView {
 			}
 
 			// Attempt to get folder for right pane
-			const rightFolder = this.app.vault.getAbstractFileByPath(this.viewState.rightPath);
+			const rightFolder = this.app.vault.getAbstractFileByPath(
+				this.viewState.rightPath
+			);
 			if (rightFolder instanceof TFolder) {
 				this.rightPane.currentFolder = rightFolder;
 				this.rightPane.files = this.getSortedFiles(rightFolder);
-				
+
 				// Restore selected index, ensuring it's within bounds
 				this.rightPane.selectedIndex = Math.min(
 					this.viewState.rightSelectedIndex,
@@ -1409,7 +1772,7 @@ export class MidnightCommanderView extends ItemView {
 			// Restore active pane
 			this.leftPane.isActive = this.viewState.activePane === 'left';
 			this.rightPane.isActive = this.viewState.activePane === 'right';
-			
+
 			// Update settings to match restored state
 			this.settings.activePane = this.viewState.activePane;
 		} catch (error) {
@@ -1432,7 +1795,7 @@ export class MidnightCommanderView extends ItemView {
 			rightPath: this.rightPane.currentFolder.path,
 			activePane: this.leftPane.isActive ? 'left' : 'right',
 			leftSelectedIndex: this.leftPane.selectedIndex,
-			rightSelectedIndex: this.rightPane.selectedIndex
+			rightSelectedIndex: this.rightPane.selectedIndex,
 		};
 	}
 
@@ -1446,18 +1809,20 @@ export class MidnightCommanderView extends ItemView {
 	private bookmarkCurrentFolder() {
 		const activePane = this.getActivePane();
 		const currentFolder = activePane.currentFolder;
-		
+
 		// Add to bookmarks in settings
 		if (!this.settings.bookmarks) {
 			this.settings.bookmarks = [];
 		}
-		
+
 		// Check if already bookmarked
-		const existingBookmark = this.settings.bookmarks.find(b => b.path === currentFolder.path);
+		const existingBookmark = this.settings.bookmarks.find(
+			b => b.path === currentFolder.path
+		);
 		if (!existingBookmark) {
 			this.settings.bookmarks.push({
 				name: currentFolder.name,
-				path: currentFolder.path
+				path: currentFolder.path,
 			});
 			this.plugin.saveSettings();
 			console.log(`Bookmarked: ${currentFolder.name}`);
@@ -1474,7 +1839,7 @@ export class MidnightCommanderView extends ItemView {
 			console.log('No bookmarks available');
 			return;
 		}
-		
+
 		const bookmarkMenu = new PopupMenu({
 			className: 'bookmark-menu',
 			items: this.settings.bookmarks.map(bookmark => ({
@@ -1486,15 +1851,15 @@ export class MidnightCommanderView extends ItemView {
 						const activePane = this.getActivePane();
 						this.navigateToFolder(activePane, folder);
 					}
-				}
-			}))
+				},
+			})),
 		});
-		
+
 		// Position menu in center
 		const rect = this.contentEl.getBoundingClientRect();
 		bookmarkMenu.showAtPosition({
 			x: rect.left + rect.width / 2 - 150,
-			y: rect.top + 100
+			y: rect.top + 100,
 		});
 	}
 
@@ -1526,9 +1891,12 @@ export class MidnightCommanderView extends ItemView {
 		// For now, show commonly accessed folders
 		const recentFolders = [
 			this.app.vault.getRoot(),
-			...this.app.vault.getRoot().children.filter(f => f instanceof TFolder).slice(0, 5)
+			...this.app.vault
+				.getRoot()
+				.children.filter(f => f instanceof TFolder)
+				.slice(0, 5),
 		] as TFolder[];
-		
+
 		const recentMenu = new PopupMenu({
 			className: 'recent-folders-menu',
 			items: recentFolders.map(folder => ({
@@ -1537,15 +1905,15 @@ export class MidnightCommanderView extends ItemView {
 				callback: () => {
 					const activePane = this.getActivePane();
 					this.navigateToFolder(activePane, folder);
-				}
-			}))
+				},
+			})),
 		});
-		
+
 		// Position menu in center
 		const rect = this.contentEl.getBoundingClientRect();
 		recentMenu.showAtPosition({
 			x: rect.left + rect.width / 2 - 150,
-			y: rect.top + 100
+			y: rect.top + 100,
 		});
 	}
 
@@ -1564,14 +1932,14 @@ export class MidnightCommanderView extends ItemView {
 	private async duplicateSelectedFiles() {
 		const activePane = this.getActivePane();
 		const selectedFiles = this.getSelectedFiles(activePane);
-		
+
 		if (selectedFiles.length === 0) {
 			const currentFile = activePane.files[activePane.selectedIndex];
 			if (currentFile) {
 				selectedFiles.push(currentFile);
 			}
 		}
-		
+
 		try {
 			for (const file of selectedFiles) {
 				await this.fileOperations.copyFileInPlace(file);
@@ -1588,7 +1956,7 @@ export class MidnightCommanderView extends ItemView {
 	private async renameSelectedFile() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile) {
 			try {
 				await this.fileOperations.renameFile(currentFile);
@@ -1605,29 +1973,47 @@ export class MidnightCommanderView extends ItemView {
 	private showFileProperties() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile) {
 			// Show file info in a popup
 			const stats = this.app.vault.adapter.stat(currentFile.path);
-			stats.then(stat => {
-				const infoMenu = new PopupMenu({
-					className: 'file-properties-menu',
-					items: [
-						{ title: `Name: ${currentFile.name}`, icon: 'file', callback: () => {} },
-						{ title: `Path: ${currentFile.path}`, icon: 'folder', callback: () => {} },
-						{ title: `Size: ${stat?.size || 'Unknown'} bytes`, icon: 'info', callback: () => {} },
-						{ title: `Modified: ${stat?.mtime ? new Date(stat.mtime).toLocaleString() : 'Unknown'}`, icon: 'calendar', callback: () => {} }
-					]
+			stats
+				.then(stat => {
+					const infoMenu = new PopupMenu({
+						className: 'file-properties-menu',
+						items: [
+							{
+								title: `Name: ${currentFile.name}`,
+								icon: 'file',
+								callback: () => {},
+							},
+							{
+								title: `Path: ${currentFile.path}`,
+								icon: 'folder',
+								callback: () => {},
+							},
+							{
+								title: `Size: ${stat?.size || 'Unknown'} bytes`,
+								icon: 'info',
+								callback: () => {},
+							},
+							{
+								title: `Modified: ${stat?.mtime ? new Date(stat.mtime).toLocaleString() : 'Unknown'}`,
+								icon: 'calendar',
+								callback: () => {},
+							},
+						],
+					});
+
+					const rect = this.contentEl.getBoundingClientRect();
+					infoMenu.showAtPosition({
+						x: rect.left + rect.width / 2 - 200,
+						y: rect.top + 100,
+					});
+				})
+				.catch(error => {
+					console.error('Failed to get file properties:', error);
 				});
-				
-				const rect = this.contentEl.getBoundingClientRect();
-				infoMenu.showAtPosition({
-					x: rect.left + rect.width / 2 - 200,
-					y: rect.top + 100
-				});
-			}).catch(error => {
-				console.error('Failed to get file properties:', error);
-			});
 		}
 	}
 
@@ -1661,8 +2047,8 @@ export class MidnightCommanderView extends ItemView {
 			border-radius: 4px;
 			width: 300px;
 		`;
-		
-		input.addEventListener('keydown', (e) => {
+
+		input.addEventListener('keydown', e => {
 			if (e.key === 'Enter') {
 				const path = input.value.trim();
 				const folder = this.app.vault.getAbstractFileByPath(path);
@@ -1675,7 +2061,7 @@ export class MidnightCommanderView extends ItemView {
 				document.body.removeChild(input);
 			}
 		});
-		
+
 		document.body.appendChild(input);
 		input.focus();
 	}
@@ -1688,7 +2074,9 @@ export class MidnightCommanderView extends ItemView {
 		this.plugin.saveSettings();
 		this.refreshPane(this.leftPane);
 		this.refreshPane(this.rightPane);
-		console.log(`Hidden files ${this.settings.showHiddenFiles ? 'shown' : 'hidden'}`);
+		console.log(
+			`Hidden files ${this.settings.showHiddenFiles ? 'shown' : 'hidden'}`
+		);
 	}
 
 	/**
@@ -1698,17 +2086,33 @@ export class MidnightCommanderView extends ItemView {
 		const sortMenu = new PopupMenu({
 			className: 'sort-menu',
 			items: [
-				{ title: 'Sort by Name', icon: 'type', callback: () => this.setSortOrder('name') },
-				{ title: 'Sort by Date Modified', icon: 'calendar', callback: () => this.setSortOrder('modified') },
-				{ title: 'Sort by Size', icon: 'ruler', callback: () => this.setSortOrder('size') },
-				{ title: 'Sort by Type', icon: 'file-type', callback: () => this.setSortOrder('type') }
-			]
+				{
+					title: 'Sort by Name',
+					icon: 'type',
+					callback: () => this.setSortOrder('name'),
+				},
+				{
+					title: 'Sort by Date Modified',
+					icon: 'calendar',
+					callback: () => this.setSortOrder('modified'),
+				},
+				{
+					title: 'Sort by Size',
+					icon: 'ruler',
+					callback: () => this.setSortOrder('size'),
+				},
+				{
+					title: 'Sort by Type',
+					icon: 'file-type',
+					callback: () => this.setSortOrder('type'),
+				},
+			],
 		});
-		
+
 		const rect = this.contentEl.getBoundingClientRect();
 		sortMenu.showAtPosition({
 			x: rect.left + rect.width / 2 - 100,
-			y: rect.top + 100
+			y: rect.top + 100,
 		});
 	}
 
@@ -1729,13 +2133,13 @@ export class MidnightCommanderView extends ItemView {
 		// Simple pattern selection - for now just select all .md files
 		const activePane = this.getActivePane();
 		activePane.selectedFiles.clear();
-		
+
 		for (const file of activePane.files) {
 			if (file.name.endsWith('.md')) {
 				activePane.selectedFiles.add(file.path);
 			}
 		}
-		
+
 		this.renderDualPane();
 		console.log('Selected all .md files');
 	}
@@ -1746,13 +2150,13 @@ export class MidnightCommanderView extends ItemView {
 	private invertSelection() {
 		const activePane = this.getActivePane();
 		const newSelection = new Set<string>();
-		
+
 		for (const file of activePane.files) {
 			if (!activePane.selectedFiles.has(file.path)) {
 				newSelection.add(file.path);
 			}
 		}
-		
+
 		activePane.selectedFiles = newSelection;
 		this.renderDualPane();
 		console.log('Selection inverted');
@@ -1764,13 +2168,13 @@ export class MidnightCommanderView extends ItemView {
 	private selectAllFolders() {
 		const activePane = this.getActivePane();
 		activePane.selectedFiles.clear();
-		
+
 		for (const file of activePane.files) {
 			if (file instanceof TFolder) {
 				activePane.selectedFiles.add(file.path);
 			}
 		}
-		
+
 		this.renderDualPane();
 		console.log('Selected all folders');
 	}
@@ -1781,7 +2185,7 @@ export class MidnightCommanderView extends ItemView {
 	private syncPanes() {
 		const activePane = this.getActivePane();
 		const inactivePane = this.getInactivePane();
-		
+
 		this.navigateToFolder(inactivePane, activePane.currentFolder);
 		console.log('Panes synchronized');
 	}
@@ -1792,7 +2196,7 @@ export class MidnightCommanderView extends ItemView {
 	private openSelectedInNewTab() {
 		const activePane = this.getActivePane();
 		const currentFile = activePane.files[activePane.selectedIndex];
-		
+
 		if (currentFile instanceof TFile) {
 			const newLeaf = this.app.workspace.getLeaf('tab');
 			newLeaf.openFile(currentFile);
@@ -1808,10 +2212,10 @@ export class MidnightCommanderView extends ItemView {
 			// Use path property which exists on FileSystemAdapter in Obsidian
 			const vaultPath = (this.app.vault.adapter as any).path || '';
 			const fullPath = path.resolve(vaultPath, filePath);
-			
+
 			// Detect platform and use appropriate command
 			let command: string;
-			
+
 			if (process.platform === 'win32') {
 				// Windows: Use explorer.exe with /select flag to highlight the file
 				command = `explorer.exe /select,"${fullPath}"`;
@@ -1825,9 +2229,9 @@ export class MidnightCommanderView extends ItemView {
 					`nautilus --select "${fullPath}"`,
 					`dolphin --select "${fullPath}"`,
 					`thunar "${path.dirname(fullPath)}"`,
-					`xdg-open "${path.dirname(fullPath)}"`
+					`xdg-open "${path.dirname(fullPath)}"`,
 				];
-				
+
 				// Try each file manager until one succeeds
 				for (const fm of fileManagers) {
 					try {
@@ -1843,11 +2247,11 @@ export class MidnightCommanderView extends ItemView {
 						continue;
 					}
 				}
-				
+
 				// If no file manager worked, fall back to xdg-open with directory
 				command = `xdg-open "${path.dirname(fullPath)}"`;
 			}
-			
+
 			// Execute the command
 			if (command) {
 				exec(command, (error: any) => {
@@ -1870,7 +2274,7 @@ export class MidnightCommanderView extends ItemView {
 		try {
 			const parentDir = path.dirname(fullPath);
 			let command: string;
-			
+
 			if (process.platform === 'win32') {
 				command = `explorer.exe "${parentDir}"`;
 			} else if (process.platform === 'darwin') {
@@ -1878,7 +2282,7 @@ export class MidnightCommanderView extends ItemView {
 			} else {
 				command = `xdg-open "${parentDir}"`;
 			}
-			
+
 			exec(command, (error: any) => {
 				if (error) {
 					console.error('Failed to open parent directory:', error);
