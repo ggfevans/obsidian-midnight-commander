@@ -94,18 +94,8 @@ export class FileOperations {
             return;
         }
 
-        // Show enhanced confirmation dialog
-        const fileList = files.map(f => f.name).join(', ');
-        const message = files.length === 1 ? 
-            `Are you sure you want to delete "${files[0].name}"?` :
-            `Are you sure you want to delete ${files.length} items?\n\n${fileList.length > 100 ? fileList.substring(0, 100) + '...' : fileList}`;
-        
-        const confirmed = await NotificationManager.confirm(
-            message,
-            'Confirm Deletion',
-            'Delete',
-            'Cancel'
-        );
+        // Use standard Obsidian modal for confirmation
+        const confirmed = await this.confirmDeletion(files);
         
         if (!confirmed) {
             NotificationManager.info('Deletion cancelled');
@@ -306,11 +296,29 @@ export class FileOperations {
     }
 
     private async confirmDeletion(files: TAbstractFile[]): Promise<boolean> {
+        // Generate a detailed message for the confirmation dialog
+        let message: string;
+        if (files.length === 1) {
+            const file = files[0];
+            const type = file instanceof TFolder ? 'folder' : 'file';
+            message = `Are you sure you want to delete the ${type} "${file.name}"?`;
+        } else {
+            // Show up to 5 file names, then summarize the rest
+            const maxDisplayItems = 5;
+            const displayFiles = files.slice(0, maxDisplayItems).map(f => `• ${f.name}`).join('\n');
+            const remainingCount = files.length - maxDisplayItems;
+            
+            message = `Are you sure you want to delete ${files.length} items?\n\n${displayFiles}`;
+            if (remainingCount > 0) {
+                message += `\n... and ${remainingCount} more`;
+            }
+        }
+
         return new Promise((resolve) => {
             const modal = new ConfirmationModal(
                 this.app,
                 'Confirm Deletion',
-                `Are you sure you want to delete ${files.length} item(s)?`,
+                message,
                 'Delete',
                 'Cancel',
                 (result) => resolve(result)
@@ -484,12 +492,34 @@ class ConfirmationModal extends Modal {
     onOpen() {
         const { contentEl } = this;
         contentEl.empty();
+        contentEl.addClass('midnight-commander-confirmation-modal');
 
+        // Title
         contentEl.createEl('h2', { text: this.title });
-        contentEl.createEl('p', { text: this.message });
+        
+        // Message with support for multiline text
+        const messageLines = this.message.split('\n');
+        const messageContainer = contentEl.createDiv({ cls: 'modal-message' });
+        messageLines.forEach(line => {
+            if (line.trim()) {
+                messageContainer.createEl('div', { text: line, cls: 'modal-message-line' });
+            }
+        });
 
+        // Button container with standard Obsidian modal styling
         const buttonContainer = contentEl.createDiv({ cls: 'modal-button-container' });
         
+        // Cancel button first (standard Obsidian pattern)
+        const cancelButton = buttonContainer.createEl('button', { 
+            text: this.cancelText,
+            cls: 'mod-cancel'
+        });
+        cancelButton.addEventListener('click', () => {
+            this.close();
+            this.callback(false);
+        });
+
+        // Confirm button with warning styling
         const confirmButton = buttonContainer.createEl('button', { 
             text: this.confirmText,
             cls: 'mod-warning'
@@ -499,10 +529,20 @@ class ConfirmationModal extends Modal {
             this.callback(true);
         });
 
-        const cancelButton = buttonContainer.createEl('button', { text: this.cancelText });
-        cancelButton.addEventListener('click', () => {
+        // Focus cancel button by default for safety
+        cancelButton.focus();
+
+        // Handle Enter key for confirm and Escape for cancel
+        this.scope.register([], 'Enter', () => {
+            this.close();
+            this.callback(true);
+            return false;
+        });
+
+        this.scope.register([], 'Escape', () => {
             this.close();
             this.callback(false);
+            return false;
         });
     }
 
