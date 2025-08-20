@@ -1,12 +1,24 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useCallback } from 'react';
 import { TAbstractFile, TFolder } from 'obsidian';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { useRecoilState, useSetRecoilState } from 'recoil';
 import { FilePaneProps } from '../types/interfaces';
 import { FileItem } from './FileItem';
 import { BreadcrumbNavigation } from '../components/BreadcrumbNavigation';
 import { FileFilter } from '../components/FileFilter';
+import { FolderTree } from '../components/FolderTree/FolderTree';
+import { TreeActions } from '../components/FolderTree/TreeActions';
+import {
+	viewModeState,
+	sortByState,
+	showFilesInTreeState,
+	searchQueryState,
+	expandedFoldersState,
+	PaneId,
+} from '../state/treeState';
 
 export const FilePane: React.FC<FilePaneProps> = ({
+	app,
 	paneState,
 	onStateChange,
 	onFileClick,
@@ -16,6 +28,44 @@ export const FilePane: React.FC<FilePaneProps> = ({
 	onFilterToggle,
 	onFilterClear,
 }) => {
+	// Determine pane ID from paneState.id
+	const paneId: PaneId = paneState.id;
+
+	// Tree state management with Recoil
+	const [viewMode, setViewMode] = useRecoilState(viewModeState(paneId));
+	const [sortBy, setSortBy] = useRecoilState(sortByState(paneId));
+	const [showFilesInTree, setShowFilesInTree] = useRecoilState(
+		showFilesInTreeState(paneId)
+	);
+	const [searchQuery, setSearchQuery] = useRecoilState(
+		searchQueryState(paneId)
+	);
+	const setExpandedFolders = useSetRecoilState(expandedFoldersState(paneId));
+
+	// Tree operation handlers
+	const handleTreeExpandAll = useCallback(() => {
+		const allFolders = new Set<string>();
+		const collectAllFolders = (folder: TFolder) => {
+			allFolders.add(folder.path);
+			folder.children?.forEach(child => {
+				if (child instanceof TFolder) {
+					collectAllFolders(child);
+				}
+			});
+		};
+		collectAllFolders(paneState.currentFolder);
+		setExpandedFolders(allFolders);
+	}, [paneState.currentFolder, setExpandedFolders]);
+
+	const handleTreeCollapseAll = useCallback(() => {
+		setExpandedFolders(new Set());
+	}, [setExpandedFolders]);
+
+	const handleTreeRefresh = useCallback(async () => {
+		// Force refresh of the current folder to update tree state
+		app.vault.adapter.list(paneState.currentFolder.path);
+	}, [app.vault.adapter, paneState.currentFolder.path]);
+
 	// Helper function to select a range of files
 	const selectFileRange = (
 		startIndex: number,
@@ -162,6 +212,25 @@ export const FilePane: React.FC<FilePaneProps> = ({
 							{paneState.selectedFiles.size} selected
 						</span>
 					)}
+					{/* Tree Actions Component */}
+					<TreeActions
+						paneId={paneId}
+						viewMode={viewMode}
+						sortBy={sortBy}
+						showFilesInTree={showFilesInTree}
+						searchQuery={searchQuery}
+						onToggleView={setViewMode}
+						onChangeSorting={setSortBy}
+						onToggleFiles={setShowFilesInTree}
+						onSearchChange={setSearchQuery}
+						onExpandAll={handleTreeExpandAll}
+						onCollapseAll={handleTreeCollapseAll}
+						onRefresh={handleTreeRefresh}
+						isCompact={true}
+						isActive={paneState.isActive}
+						totalItems={files.length}
+						visibleItems={files.length}
+					/>
 					{paneState.isActive && (
 						<span className="pane-active-indicator" title="Active pane">
 							●
@@ -181,7 +250,29 @@ export const FilePane: React.FC<FilePaneProps> = ({
 				/>
 			)}
 
-			{files.length === 0 ? (
+			{/* Conditional rendering based on view mode */}
+			{viewMode === 'tree' ? (
+				/* Tree View */
+				<FolderTree
+					app={app}
+					rootFolder={paneState.currentFolder}
+					paneId={paneId}
+					isActive={paneState.isActive}
+					onNavigateToFolder={onNavigateToFolder}
+					onFileClick={onFileClick}
+					onContextMenu={(item, event) =>
+						onFileContextMenu(item, { x: event.clientX, y: event.clientY })
+					}
+					height={window.innerHeight - 200} // Adjust based on header/filter heights
+					width={300} // Will be styled with CSS
+					showFileCount={true}
+					sortBy={sortBy}
+					searchQuery={searchQuery}
+					showFilesInTree={showFilesInTree}
+					maxRenderDepth={50}
+				/>
+			) : /* List View (original virtual scrolling) */
+			files.length === 0 ? (
 				<div className="file-list-empty">
 					<p>No files in this directory</p>
 				</div>

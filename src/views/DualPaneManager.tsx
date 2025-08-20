@@ -1,10 +1,25 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { TAbstractFile } from 'obsidian';
+import { TAbstractFile, TFolder } from 'obsidian';
 import { FilePane } from './FilePane';
 import { QuickSearch } from '../components/QuickSearch';
 import { FilePreview } from '../components/FilePreview';
 import { ResizeHandle } from '../components/ResizeHandle';
-import { DualPaneManagerProps } from '../types/interfaces';
+import {
+	DualPaneManagerProps,
+	PaneState,
+	FileClickOptions,
+	ContextMenuPosition,
+} from '../types/interfaces';
+
+// Extend window interface for global function declarations
+declare global {
+	interface Window {
+		toggleLeftSearch?: () => void;
+		toggleRightSearch?: () => void;
+		toggleQuickSearch?: () => void;
+		showFilePreview?: (file: TAbstractFile, source: HTMLElement) => void;
+	}
+}
 
 export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	app,
@@ -160,35 +175,47 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	]);
 
 	// Event handlers
-	const handleLeftPaneStateChange = (newState: any) => {
+	const handleLeftPaneStateChange = (newState: Partial<PaneState>) => {
 		onPaneStateChange('left', newState);
 	};
 
-	const handleRightPaneStateChange = (newState: any) => {
+	const handleRightPaneStateChange = (newState: Partial<PaneState>) => {
 		onPaneStateChange('right', newState);
 	};
 
-	const handleLeftFileClick = (file: TAbstractFile, options?: any) => {
+	const handleLeftFileClick = (
+		file: TAbstractFile,
+		options?: FileClickOptions
+	) => {
 		onFileClick(file, 'left', options);
 	};
 
-	const handleRightFileClick = (file: TAbstractFile, options?: any) => {
+	const handleRightFileClick = (
+		file: TAbstractFile,
+		options?: FileClickOptions
+	) => {
 		onFileClick(file, 'right', options);
 	};
 
-	const handleLeftFileContextMenu = (file: TAbstractFile, position: any) => {
+	const handleLeftFileContextMenu = (
+		file: TAbstractFile,
+		position: ContextMenuPosition
+	) => {
 		onFileContextMenu(file, 'left', position);
 	};
 
-	const handleRightFileContextMenu = (file: TAbstractFile, position: any) => {
+	const handleRightFileContextMenu = (
+		file: TAbstractFile,
+		position: ContextMenuPosition
+	) => {
 		onFileContextMenu(file, 'right', position);
 	};
 
-	const handleLeftNavigateToFolder = (folder: any) => {
+	const handleLeftNavigateToFolder = (folder: TFolder) => {
 		onNavigateToFolder(folder, 'left');
 	};
 
-	const handleRightNavigateToFolder = (folder: any) => {
+	const handleRightNavigateToFolder = (folder: TFolder) => {
 		onNavigateToFolder(folder, 'right');
 	};
 
@@ -252,7 +279,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	// Expose search toggle functions and file preview function
 	useEffect(() => {
 		// Attach toggle functions to global window object for access from MidnightCommanderView
-		(window as any).toggleLeftSearch = () => {
+		window.toggleLeftSearch = () => {
 			if (leftPane.isActive) {
 				setShowLeftSearch(!showLeftSearch);
 				if (showLeftSearch) {
@@ -261,7 +288,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 			}
 		};
 
-		(window as any).toggleRightSearch = () => {
+		window.toggleRightSearch = () => {
 			if (rightPane.isActive) {
 				setShowRightSearch(!showRightSearch);
 				if (showRightSearch) {
@@ -270,7 +297,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 			}
 		};
 
-		(window as any).toggleQuickSearch = () => {
+		window.toggleQuickSearch = () => {
 			if (leftPane.isActive) {
 				setShowLeftSearch(!showLeftSearch);
 				if (showLeftSearch) {
@@ -285,14 +312,14 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 		};
 
 		// Expose file preview function globally
-		(window as any).showFilePreview = handleShowFilePreview;
+		window.showFilePreview = handleShowFilePreview;
 
 		return () => {
 			// Cleanup global functions
-			delete (window as any).toggleLeftSearch;
-			delete (window as any).toggleRightSearch;
-			delete (window as any).toggleQuickSearch;
-			delete (window as any).showFilePreview;
+			delete window.toggleLeftSearch;
+			delete window.toggleRightSearch;
+			delete window.toggleQuickSearch;
+			delete window.showFilePreview;
 		};
 	}, [leftPane.isActive, rightPane.isActive, showLeftSearch, showRightSearch]);
 
@@ -360,6 +387,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				style={{ height: `${topPaneHeight}px` }}
 			>
 				<FilePane
+					app={app}
 					paneState={leftPane}
 					onStateChange={handleLeftPaneStateChange}
 					onFileClick={handleLeftFileClick}
@@ -394,6 +422,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				style={{ height: `${bottomPaneHeight}px` }}
 			>
 				<FilePane
+					app={app}
 					paneState={rightPane}
 					onStateChange={handleRightPaneStateChange}
 					onFileClick={handleRightFileClick}
@@ -425,6 +454,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				style={{ width: `${leftPaneWidth}px` }}
 			>
 				<FilePane
+					app={app}
 					paneState={leftPane}
 					onStateChange={handleLeftPaneStateChange}
 					onFileClick={handleLeftFileClick}
@@ -459,6 +489,7 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 				style={{ width: `${rightPaneWidth}px` }}
 			>
 				<FilePane
+					app={app}
 					paneState={rightPane}
 					onStateChange={handleRightPaneStateChange}
 					onFileClick={handleRightFileClick}

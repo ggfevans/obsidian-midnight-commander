@@ -86,12 +86,12 @@ export interface DualPaneManagerProps {
 	onFileClick: (
 		file: TAbstractFile,
 		paneId: 'left' | 'right',
-		options?: any
+		options?: FileClickOptions
 	) => void;
 	onFileContextMenu: (
 		file: TAbstractFile,
 		paneId: 'left' | 'right',
-		position: any
+		position: ContextMenuPosition
 	) => void;
 	onNavigateToFolder: (folder: TFolder, paneId: 'left' | 'right') => void;
 	onFilterChange?: (paneId: 'left' | 'right', options: FilterOptions) => void;
@@ -109,6 +109,7 @@ export interface DualPaneManagerProps {
 }
 
 export interface FilePaneProps {
+	app: App;
 	paneState: PaneState;
 	onStateChange: (newState: Partial<PaneState>) => void;
 	onFileClick: (file: TAbstractFile, options?: FileClickOptions) => void;
