@@ -25,9 +25,44 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 			)
 			.addToggle(toggle =>
 				toggle
-					.setValue(this.plugin.settings.openViewOnStart)
+					.setValue(
+						this.plugin.settings.openViewOnStart ||
+							this.plugin.settings.openOnStartup
+					)
 					.onChange(async value => {
 						this.plugin.settings.openViewOnStart = value;
+						this.plugin.settings.openOnStartup = value;
+						await this.plugin.saveSettings();
+					})
+			);
+
+		// === PANEL LOCATION CONTROL ===
+		containerEl.createEl('h3', { text: 'Panel Location Control' });
+
+		new Setting(containerEl)
+			.setName('Default panel location')
+			.setDesc('Choose which sidebar the panel opens in by default.')
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('left', 'Left Sidebar')
+					.addOption('right', 'Right Sidebar')
+					.setValue(this.plugin.settings.defaultLocation)
+					.onChange(async value => {
+						this.plugin.settings.defaultLocation = value as 'left' | 'right';
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
+			.setName('Remember panel location')
+			.setDesc(
+				'Remember the last used location and restore it when reopening the panel.'
+			)
+			.addToggle(toggle =>
+				toggle
+					.setValue(this.plugin.settings.rememberLocation)
+					.onChange(async value => {
+						this.plugin.settings.rememberLocation = value;
 						await this.plugin.saveSettings();
 					})
 			);
@@ -281,6 +316,12 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 				<li><kbd>Enter</kbd> - Open file/enter folder</li>
 				<li><kbd>Ctrl+Home</kbd> - Go to vault root</li>
 				<li><kbd>Alt+←/→</kbd> - Navigation history</li>
+			</ul>
+			<p><strong>Panel Control:</strong></p>
+			<ul>
+				<li>Commands available: "Open Midnight Commander", "Open in left sidebar", "Open in right sidebar"</li>
+				<li>Ribbon icon uses your default location setting</li>
+				<li>Panel remembers last used location when "Remember panel location" is enabled</li>
 			</ul>
 			<p><strong>File Operations:</strong></p>
 			<ul>

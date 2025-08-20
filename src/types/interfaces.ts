@@ -5,6 +5,11 @@ export interface MidnightCommanderSettings {
 	showHiddenFiles: boolean;
 	openViewOnStart: boolean;
 
+	// Panel location control settings
+	defaultLocation: 'left' | 'right';
+	rememberLocation: boolean;
+	openOnStartup: boolean;
+
 	// Keyboard settings
 	vimBindings: boolean;
 

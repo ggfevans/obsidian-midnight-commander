@@ -2,7 +2,7 @@
  * Context-menu implementation notes can be found in gVault:
  * [[01-PROJECTS/obsidian-midnight-commander/Context-Menu Implementation]]
  */
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin } from 'obsidian';
 
 import {
 	MidnightCommanderView,
@@ -18,6 +18,10 @@ import { PluginContext } from './src/utils/PluginContext';
 const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	showHiddenFiles: false,
 	openViewOnStart: false,
+	// Panel location control defaults
+	defaultLocation: 'left',
+	rememberLocation: true,
+	openOnStartup: false,
 	vimBindings: false,
 	showFileIcons: true,
 	activePane: 'left',
@@ -163,6 +167,19 @@ export default class MidnightCommanderPlugin extends Plugin {
 			callback: () => this.activateView(),
 		});
 
+		// Add commands for specific locations
+		this.addCommand({
+			id: 'open-left',
+			name: 'Open in left sidebar',
+			callback: () => this.activateView('left'),
+		});
+
+		this.addCommand({
+			id: 'open-right',
+			name: 'Open in right sidebar',
+			callback: () => this.activateView('right'),
+		});
+
 		// File navigation commands
 		this.addCommand({
 			id: 'navigate-to-next-file',
@@ -195,7 +212,7 @@ export default class MidnightCommanderPlugin extends Plugin {
 	private setupEventHandlers() {
 		// Open view on startup if enabled
 		this.eventManager.registerAppEvent('workspace', 'layout-ready', () => {
-			if (this.settings.openViewOnStart) {
+			if (this.settings.openViewOnStart || this.settings.openOnStartup) {
 				this.activateView();
 			}
 		});
@@ -209,29 +226,37 @@ export default class MidnightCommanderPlugin extends Plugin {
 		await this.saveData(this.settings);
 	}
 
-	async activateView() {
+	async activateView(location?: 'left' | 'right') {
+		const targetLocation = location || this.settings.defaultLocation;
 		const { workspace } = this.app;
 
-		let leaf: WorkspaceLeaf | null = null;
-		const leaves = workspace.getLeavesOfType(VIEW_TYPE_MIDNIGHT_COMMANDER);
-
-		if (leaves.length > 0) {
-			// A leaf with our view already exists, use that
-			leaf = leaves[0];
-		} else {
-			// Our view could not be found in the workspace, create a new leaf
-			// in the right sidebar for it
-			leaf = workspace.getRightLeaf(false);
-			if (leaf) {
-				await leaf.setViewState({
-					type: VIEW_TYPE_MIDNIGHT_COMMANDER,
-					active: true,
-				});
+		// Check for existing leaf location if remembering
+		if (this.settings.rememberLocation) {
+			const existingLeaves = workspace.getLeavesOfType(
+				VIEW_TYPE_MIDNIGHT_COMMANDER
+			);
+			if (existingLeaves.length > 0) {
+				workspace.revealLeaf(existingLeaves[0]);
+				return;
 			}
 		}
 
-		// "Reveal" the leaf in case it is in a collapsed sidebar
+		// Detach existing instances
+		workspace.detachLeavesOfType(VIEW_TYPE_MIDNIGHT_COMMANDER);
+
+		// Get appropriate leaf based on location
+		const leaf =
+			targetLocation === 'left'
+				? workspace.getLeftLeaf(false)
+				: workspace.getRightLeaf(false);
+
 		if (leaf) {
+			await leaf.setViewState({
+				type: VIEW_TYPE_MIDNIGHT_COMMANDER,
+				active: true,
+			});
+
+			// "Reveal" the leaf in case it is in a collapsed sidebar
 			workspace.revealLeaf(leaf);
 		}
 	}
