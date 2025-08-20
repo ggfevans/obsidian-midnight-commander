@@ -160,6 +160,26 @@ export class MidnightCommanderSettingTab extends PluginSettingTab {
 			);
 
 		new Setting(containerEl)
+			.setName('File opening behavior')
+			.setDesc('How files should open when clicked.')
+			.addDropdown(dropdown =>
+				dropdown
+					.addOption('replace', 'Replace current tab')
+					.addOption('new-tab', 'Open in new tab')
+					.addOption('adjacent-pane', 'Open in adjacent pane')
+					.addOption('split-right', 'Split to the right')
+					.setValue(this.plugin.settings.fileOpenBehavior || 'replace')
+					.onChange(async value => {
+						this.plugin.settings.fileOpenBehavior = value as
+							| 'replace'
+							| 'new-tab'
+							| 'adjacent-pane'
+							| 'split-right';
+						await this.plugin.saveSettings();
+					})
+			);
+
+		new Setting(containerEl)
 			.setName('Layout orientation')
 			.setDesc(
 				'Choose between vertical (stacked) or horizontal (side-by-side) dual-pane layout.'

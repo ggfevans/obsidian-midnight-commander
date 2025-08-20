@@ -150,7 +150,7 @@ const savePersistedValue = <T>(key: string, value: T): void => {
 const DEFAULT_TREE_PANE_STATE: TreePaneState = {
 	expandedFolders: new Set<string>(),
 	focusedFolder: null,
-	viewMode: 'tree',
+	viewMode: 'list', // Default to Classic Dual-Pane mode as per UX audit
 	sortBy: 'name',
 	showFilesInTree: false,
 	searchQuery: '',

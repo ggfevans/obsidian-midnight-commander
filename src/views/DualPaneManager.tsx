@@ -57,6 +57,9 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	const [showFilePreview, setShowFilePreview] = useState(false);
 	const [previewFile, setPreviewFile] = useState<TAbstractFile | null>(null);
 
+	// Hover activation state
+	const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
+
 	// Debounced save function to prevent excessive settings saves during resize
 	const debouncedSave = useCallback(
 		(() => {
@@ -124,12 +127,13 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					setContainerWidth(width);
 
 					const handleSize = 8; // Size of resize handle
+					const statusBarHeight = 52; // Two status bars (26px each)
 
 					// Only initialize with 50/50 split if no saved sizes
 					if (layoutOrientation === 'vertical') {
 						if (!settings.rememberPaneSizes || !settings.verticalPaneSizes) {
 							// Initialize vertical layout with 50/50 split
-							const availableHeight = height - handleSize;
+							const availableHeight = height - handleSize - statusBarHeight;
 							const newTopHeight = Math.floor(availableHeight * 0.5);
 							const newBottomHeight = availableHeight - newTopHeight;
 
@@ -260,6 +264,40 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 		handleRightSearchClose();
 	};
 
+	// Hover activation handlers with delay
+	const handlePaneMouseEnter = useCallback(
+		(paneId: 'left' | 'right') => {
+			// Clear any existing timeout
+			if (hoverTimeout) {
+				clearTimeout(hoverTimeout);
+			}
+
+			// Set new timeout with 150ms delay
+			const timeout = setTimeout(() => {
+				// Only activate if not already active
+				if (
+					(paneId === 'left' && !leftPane.isActive) ||
+					(paneId === 'right' && !rightPane.isActive)
+				) {
+					// Switch active pane
+					onPaneStateChange('left', { isActive: paneId === 'left' });
+					onPaneStateChange('right', { isActive: paneId === 'right' });
+				}
+			}, 150);
+
+			setHoverTimeout(timeout);
+		},
+		[hoverTimeout, leftPane.isActive, rightPane.isActive, onPaneStateChange]
+	);
+
+	const handlePaneMouseLeave = useCallback(() => {
+		// Clear timeout when mouse leaves
+		if (hoverTimeout) {
+			clearTimeout(hoverTimeout);
+			setHoverTimeout(null);
+		}
+	}, [hoverTimeout]);
+
 	// File preview handlers
 	const handleShowFilePreview = () => {
 		const activePane = leftPane.isActive ? leftPane : rightPane;
@@ -326,7 +364,8 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 	// Vertical resize handlers
 	const handleVerticalResize = (delta: number) => {
 		const handleHeight = 8;
-		const availableHeight = containerHeight - handleHeight;
+		const statusBarHeight = 52; // Two status bars (26px each)
+		const availableHeight = containerHeight - handleHeight - statusBarHeight;
 		const newTopHeight = Math.max(
 			100,
 			Math.min(availableHeight - 100, topPaneHeight + delta)
@@ -345,7 +384,8 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 
 	const handleVerticalReset = () => {
 		const handleHeight = 8;
-		const availableHeight = containerHeight - handleHeight;
+		const statusBarHeight = 52; // Two status bars (26px each)
+		const availableHeight = containerHeight - handleHeight - statusBarHeight;
 		const resetHeight = Math.floor(availableHeight / 2);
 		setTopPaneHeight(resetHeight);
 		setBottomPaneHeight(availableHeight - resetHeight);
@@ -406,6 +446,8 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					onFilterClear={
 						onFilterClear ? () => onFilterClear('left') : undefined
 					}
+					onMouseEnter={() => handlePaneMouseEnter('left')}
+					onMouseLeave={handlePaneMouseLeave}
 				/>
 			</div>
 
@@ -441,6 +483,8 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					onFilterClear={
 						onFilterClear ? () => onFilterClear('right') : undefined
 					}
+					onMouseEnter={() => handlePaneMouseEnter('right')}
+					onMouseLeave={handlePaneMouseLeave}
 				/>
 			</div>
 		</>
@@ -473,6 +517,8 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					onFilterClear={
 						onFilterClear ? () => onFilterClear('left') : undefined
 					}
+					onMouseEnter={() => handlePaneMouseEnter('left')}
+					onMouseLeave={handlePaneMouseLeave}
 				/>
 			</div>
 
@@ -508,6 +554,8 @@ export const DualPaneManager: React.FC<DualPaneManagerProps> = ({
 					onFilterClear={
 						onFilterClear ? () => onFilterClear('right') : undefined
 					}
+					onMouseEnter={() => handlePaneMouseEnter('right')}
+					onMouseLeave={handlePaneMouseLeave}
 				/>
 			</div>
 		</>

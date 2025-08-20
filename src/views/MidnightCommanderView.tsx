@@ -58,7 +58,7 @@ export class MidnightCommanderView extends ItemView {
 			id: 'left',
 			currentFolder: rootFolder,
 			files: this.getSortedFiles(rootFolder),
-			selectedIndex: 0,
+			selectedIndex: -1, // Start with no selection to avoid purple highlight
 			selectedFiles: new Set(),
 			isActive: this.settings.activePane === 'left',
 		};
@@ -67,7 +67,7 @@ export class MidnightCommanderView extends ItemView {
 			id: 'right',
 			currentFolder: rootFolder,
 			files: this.getSortedFiles(rootFolder),
-			selectedIndex: 0,
+			selectedIndex: -1, // Start with no selection to avoid purple highlight
 			selectedFiles: new Set(),
 			isActive: this.settings.activePane === 'right',
 		};
@@ -81,8 +81,8 @@ export class MidnightCommanderView extends ItemView {
 			leftPath: rootFolder.path,
 			rightPath: rootFolder.path,
 			activePane: this.settings.activePane,
-			leftSelectedIndex: 0,
-			rightSelectedIndex: 0,
+			leftSelectedIndex: -1, // No selection by default
+			rightSelectedIndex: -1, // No selection by default
 		};
 	}
 
@@ -703,7 +703,7 @@ export class MidnightCommanderView extends ItemView {
 	private navigateToFolder(pane: PaneState, folder: TFolder) {
 		pane.currentFolder = folder;
 		pane.files = this.getSortedFiles(folder);
-		pane.selectedIndex = 0;
+		pane.selectedIndex = -1; // Don't auto-select first item to avoid purple highlight
 		pane.selectedFiles.clear();
 
 		// Prefetch metadata for files in this folder for better performance
@@ -865,10 +865,29 @@ export class MidnightCommanderView extends ItemView {
 		if (file instanceof TFolder) {
 			this.navigateToFolder(pane, file);
 		} else if (file instanceof TFile) {
-			// Open file
-			const leaf = options?.newTab
-				? this.app.workspace.getLeaf('tab')
-				: this.app.workspace.getLeaf();
+			// Use configurable file opening behavior
+			const behavior = options?.newTab
+				? 'new-tab'
+				: this.settings.fileOpenBehavior;
+			let leaf: any;
+
+			switch (behavior) {
+				case 'new-tab':
+					leaf = this.app.workspace.getLeaf('tab');
+					break;
+				case 'adjacent-pane':
+					// Open in a new leaf in the current split
+					leaf = this.app.workspace.getLeaf('split', 'vertical');
+					break;
+				case 'split-right':
+					leaf = this.app.workspace.getLeaf('split', 'vertical');
+					break;
+				case 'replace':
+				default:
+					leaf = this.app.workspace.getLeaf();
+					break;
+			}
+
 			leaf.openFile(file);
 		}
 	}
@@ -1775,8 +1794,14 @@ export class MidnightCommanderView extends ItemView {
 				leftPath: data.leftPath || this.app.vault.getRoot().path,
 				rightPath: data.rightPath || this.app.vault.getRoot().path,
 				activePane: data.activePane || 'left',
-				leftSelectedIndex: data.leftSelectedIndex || 0,
-				rightSelectedIndex: data.rightSelectedIndex || 0,
+				leftSelectedIndex:
+					typeof data.leftSelectedIndex === 'number'
+						? data.leftSelectedIndex
+						: -1,
+				rightSelectedIndex:
+					typeof data.rightSelectedIndex === 'number'
+						? data.rightSelectedIndex
+						: -1,
 			};
 
 			// Restore layout orientation and pane sizes if available
@@ -1805,11 +1830,14 @@ export class MidnightCommanderView extends ItemView {
 				this.leftPane.currentFolder = leftFolder;
 				this.leftPane.files = this.getSortedFiles(leftFolder);
 
-				// Restore selected index, ensuring it's within bounds
-				this.leftPane.selectedIndex = Math.min(
-					this.viewState.leftSelectedIndex,
-					Math.max(0, this.leftPane.files.length - 1)
-				);
+				// Restore selected index, ensuring it's within bounds (allow -1 for no selection)
+				this.leftPane.selectedIndex =
+					this.viewState.leftSelectedIndex >= 0
+						? Math.min(
+								this.viewState.leftSelectedIndex,
+								this.leftPane.files.length - 1
+							)
+						: -1;
 			}
 
 			// Attempt to get folder for right pane
@@ -1820,11 +1848,14 @@ export class MidnightCommanderView extends ItemView {
 				this.rightPane.currentFolder = rightFolder;
 				this.rightPane.files = this.getSortedFiles(rightFolder);
 
-				// Restore selected index, ensuring it's within bounds
-				this.rightPane.selectedIndex = Math.min(
-					this.viewState.rightSelectedIndex,
-					Math.max(0, this.rightPane.files.length - 1)
-				);
+				// Restore selected index, ensuring it's within bounds (allow -1 for no selection)
+				this.rightPane.selectedIndex =
+					this.viewState.rightSelectedIndex >= 0
+						? Math.min(
+								this.viewState.rightSelectedIndex,
+								this.rightPane.files.length - 1
+							)
+						: -1;
 			}
 
 			// Restore active pane

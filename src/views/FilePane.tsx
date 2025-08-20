@@ -1,19 +1,17 @@
-import React, { useRef, useMemo, useCallback } from 'react';
-import { TAbstractFile, TFolder } from 'obsidian';
+import React, { useRef, useMemo, useCallback, useEffect } from 'react';
+import { TAbstractFile, TFolder, TFile, setIcon } from 'obsidian';
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { useRecoilState, useSetRecoilState } from 'recoil';
+import { useRecoilState } from 'recoil';
 import { FilePaneProps } from '../types/interfaces';
 import { FileItem } from './FileItem';
 import { BreadcrumbNavigation } from '../components/BreadcrumbNavigation';
 import { FileFilter } from '../components/FileFilter';
 import { FolderTree } from '../components/FolderTree/FolderTree';
-import { TreeActions } from '../components/FolderTree/TreeActions';
 import {
 	viewModeState,
 	sortByState,
 	showFilesInTreeState,
 	searchQueryState,
-	expandedFoldersState,
 	PaneId,
 } from '../state/treeState';
 
@@ -27,44 +25,38 @@ export const FilePane: React.FC<FilePaneProps> = ({
 	onFilterChange,
 	onFilterToggle,
 	onFilterClear,
+	onMouseEnter,
+	onMouseLeave,
 }) => {
 	// Determine pane ID from paneState.id
 	const paneId: PaneId = paneState.id;
 
+	// Refs for icon buttons
+	const searchBtnRef = useRef<HTMLButtonElement>(null);
+	const filterBtnRef = useRef<HTMLButtonElement>(null);
+
 	// Tree state management with Recoil
-	const [viewMode, setViewMode] = useRecoilState(viewModeState(paneId));
-	const [sortBy, setSortBy] = useRecoilState(sortByState(paneId));
-	const [showFilesInTree, setShowFilesInTree] = useRecoilState(
-		showFilesInTreeState(paneId)
-	);
-	const [searchQuery, setSearchQuery] = useRecoilState(
-		searchQueryState(paneId)
-	);
-	const setExpandedFolders = useSetRecoilState(expandedFoldersState(paneId));
+	const [viewMode] = useRecoilState(viewModeState(paneId));
+	const [sortBy] = useRecoilState(sortByState(paneId));
+	const [showFilesInTree] = useRecoilState(showFilesInTreeState(paneId));
+	const [searchQuery] = useRecoilState(searchQueryState(paneId));
 
-	// Tree operation handlers
-	const handleTreeExpandAll = useCallback(() => {
-		const allFolders = new Set<string>();
-		const collectAllFolders = (folder: TFolder) => {
-			allFolders.add(folder.path);
-			folder.children?.forEach(child => {
-				if (child instanceof TFolder) {
-					collectAllFolders(child);
-				}
-			});
-		};
-		collectAllFolders(paneState.currentFolder);
-		setExpandedFolders(allFolders);
-	}, [paneState.currentFolder, setExpandedFolders]);
+	// Tree operation handlers (for future use)
 
-	const handleTreeCollapseAll = useCallback(() => {
-		setExpandedFolders(new Set());
-	}, [setExpandedFolders]);
+	// Header button handlers - integrate with existing FileFilter functionality
+	const handleSearchToggle = useCallback(() => {
+		// Toggle the existing FileFilter component
+		if (onFilterToggle) {
+			onFilterToggle(!paneState.filter?.isActive);
+		}
+	}, [onFilterToggle, paneState.filter?.isActive]);
 
-	const handleTreeRefresh = useCallback(async () => {
-		// Force refresh of the current folder to update tree state
-		app.vault.adapter.list(paneState.currentFolder.path);
-	}, [app.vault.adapter, paneState.currentFolder.path]);
+	const handleFilterToggle = useCallback(() => {
+		// Toggle the existing FileFilter component
+		if (onFilterToggle) {
+			onFilterToggle(!paneState.filter?.isActive);
+		}
+	}, [onFilterToggle, paneState.filter?.isActive]);
 
 	// Helper function to select a range of files
 	const selectFileRange = (
@@ -163,11 +155,39 @@ export const FilePane: React.FC<FilePaneProps> = ({
 		return paneState.files;
 	}, [paneState.files, paneState.filter]);
 
+	// Calculate file and folder counts with sizes (UX audit requirement)
+	const counts = useMemo(() => {
+		const folders = files.filter(f => f instanceof TFolder);
+		const filesOnly = files.filter(f => f instanceof TFile);
+
+		// Calculate total size of files
+		const totalSize = filesOnly.reduce((sum, file) => {
+			return sum + (file as TFile).stat.size;
+		}, 0);
+
+		// Format size function
+		const formatSize = (bytes: number): string => {
+			if (bytes < 1024) return `${bytes} B`;
+			if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+			if (bytes < 1024 * 1024 * 1024)
+				return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+			return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+		};
+
+		return {
+			total: files.length,
+			folders: folders.length,
+			files: filesOnly.length,
+			totalSize,
+			totalSizeFormatted: formatSize(totalSize),
+		};
+	}, [files]);
+
 	// Set up virtualizer
 	const virtualizer = useVirtualizer({
 		count: files.length,
 		getScrollElement: () => parentRef.current,
-		estimateSize: () => 36, // Height of each file item in pixels
+		estimateSize: () => 24, // Height of each file item - UX audit requirement (24px)
 		overscan: 5, // Render 5 extra items outside viewport
 	});
 
@@ -189,50 +209,64 @@ export const FilePane: React.FC<FilePaneProps> = ({
 		}
 	}, [paneState.selectedIndex, virtualizer, files.length]);
 
+	// Set icons for header buttons
+	useEffect(() => {
+		if (searchBtnRef.current) {
+			setIcon(searchBtnRef.current, 'search');
+		}
+		if (filterBtnRef.current) {
+			setIcon(filterBtnRef.current, 'filter');
+		}
+	}, []);
+
 	return (
 		<div
 			className={`file-pane ${paneState.isActive ? 'active' : 'inactive'}`}
 			data-pane-id={paneState.id}
+			onMouseEnter={onMouseEnter}
+			onMouseLeave={onMouseLeave}
 		>
-			{/* Individual pane header */}
-			<div className="pane-header">
-				<div className="pane-path">
+			{/* Updated pane header with new layout */}
+			<div className="mc-pane-header">
+				{/* Left side: breadcrumb */}
+				<div className="mc-breadcrumb">
 					<BreadcrumbNavigation
 						currentFolder={paneState.currentFolder}
 						onNavigateToFolder={onNavigateToFolder}
 						isActive={paneState.isActive}
 					/>
-					<span className="pane-file-count">
-						({files.length} item{files.length !== 1 ? 's' : ''})
-					</span>
 				</div>
-				<div className="pane-status">
+
+				{/* Right side: controls */}
+				<div className="mc-pane-controls">
+					{/* Search button */}
+					<button
+						ref={searchBtnRef}
+						className={`mc-control-btn ${paneState.filter?.isActive ? 'active' : ''}`}
+						aria-label="Search"
+						title="Search files"
+						onClick={handleSearchToggle}
+					></button>
+
+					{/* Filter button */}
+					<button
+						ref={filterBtnRef}
+						className={`mc-control-btn ${paneState.filter?.isActive ? 'active' : ''}`}
+						aria-label="Filter"
+						title="Filter options"
+						onClick={handleFilterToggle}
+					></button>
+
+					{/* Selection count when items selected */}
 					{paneState.selectedFiles.size > 0 && (
-						<span className="pane-selection-count">
-							{paneState.selectedFiles.size} selected
+						<span className="mc-selection-indicator">
+							{paneState.selectedFiles.size}
 						</span>
 					)}
-					{/* Tree Actions Component */}
-					<TreeActions
-						paneId={paneId}
-						viewMode={viewMode}
-						sortBy={sortBy}
-						showFilesInTree={showFilesInTree}
-						searchQuery={searchQuery}
-						onToggleView={setViewMode}
-						onChangeSorting={setSortBy}
-						onToggleFiles={setShowFilesInTree}
-						onSearchChange={setSearchQuery}
-						onExpandAll={handleTreeExpandAll}
-						onCollapseAll={handleTreeCollapseAll}
-						onRefresh={handleTreeRefresh}
-						isCompact={true}
-						isActive={paneState.isActive}
-						totalItems={files.length}
-						visibleItems={files.length}
-					/>
+
+					{/* Active pane indicator */}
 					{paneState.isActive && (
-						<span className="pane-active-indicator" title="Active pane">
+						<span className="mc-active-indicator" title="Active pane">
 							●
 						</span>
 					)}
@@ -274,14 +308,25 @@ export const FilePane: React.FC<FilePaneProps> = ({
 			) : /* List View (original virtual scrolling) */
 			files.length === 0 ? (
 				<div className="file-list-empty">
-					<p>No files in this directory</p>
+					<p>This folder is empty</p>
+					<span
+						style={{
+							fontSize: 'var(--font-ui-small)',
+							opacity: 0.6,
+							marginTop: 'var(--size-2-2)',
+						}}
+					>
+						{paneState.filter?.isActive
+							? 'Try adjusting your search filters'
+							: 'No files or folders to display'}
+					</span>
 				</div>
 			) : (
 				<div
 					ref={parentRef}
 					className="file-list file-list-virtual"
 					style={{
-						height: '100%',
+						height: 'calc(100% - 26px)',
 						overflowY: 'auto',
 						overflowX: 'hidden',
 					}}
@@ -328,6 +373,16 @@ export const FilePane: React.FC<FilePaneProps> = ({
 					</div>
 				</div>
 			)}
+
+			{/* Status Bar - UX audit requirement */}
+			<div className="pane-status-bar">
+				<div className="pane-status-info">
+					{counts.total} item{counts.total !== 1 ? 's' : ''}
+					{counts.totalSize > 0 && ` • ${counts.totalSizeFormatted}`}
+					{paneState.selectedFiles.size > 0 &&
+						` • ${paneState.selectedFiles.size} selected`}
+				</div>
+			</div>
 		</div>
 	);
 };

@@ -5,6 +5,13 @@
 @import url('./src/styles/popup-menu.css');
 @import url('./src/styles/tree-components.css');
 
+/* Just remove padding/margin that might cause bottom gap */
+.workspace-leaf-content[data-type='midnight-commander-view'] {
+	padding: 0;
+	margin: 0;
+}
+
+/* Basic view styling - don't interfere with layout */
 .midnight-commander-view {
 	height: 100%;
 	display: flex;
@@ -86,8 +93,8 @@
 }
 
 .file-pane.active .pane-selection-count {
-	background-color: var(--interactive-accent);
-	color: var(--text-on-accent);
+	background-color: #666666; /* Neutral gray instead of accent */
+	color: white;
 }
 
 .pane-active-indicator {
@@ -96,26 +103,121 @@
 	line-height: 1;
 }
 
-/* Main dual panes container - integrate seamlessly like native explorer */
+/* Status bar at bottom of each pane - UX audit requirement */
+.pane-status-bar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 4px 8px;
+	border-top: 1px solid #333333; /* Hardcoded border */
+	background-color: #2a2a2a !important; /* Hardcoded dark background */
+	background-image: none !important;
+	background: #2a2a2a !important;
+	min-height: 24px;
+	user-select: none; /* Prevent text selection highlighting */
+}
+
+.pane-status-info {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	white-space: nowrap;
+	background: transparent !important; /* Ensure no background highlight */
+	padding: 0;
+	margin: 0;
+}
+
+.file-pane.active .pane-status-info {
+	color: var(--text-muted);
+	background: transparent !important; /* Ensure no background highlight */
+}
+
+/* Remove any possible selection highlighting and focus states */
+.pane-status-bar::selection,
+.pane-status-info::selection {
+	background: transparent;
+}
+
+.pane-status-bar:focus,
+.pane-status-info:focus {
+	outline: none;
+	background: transparent !important;
+}
+
+/* Override any inherited selection/highlight styles */
+.pane-status-bar *,
+.pane-status-info * {
+	background: transparent !important;
+	outline: none;
+}
+
+/* Extremely specific override to remove purple highlight */
+.file-pane .pane-status-bar .pane-status-info,
+.file-pane.active .pane-status-bar .pane-status-info,
+.file-pane.inactive .pane-status-bar .pane-status-info {
+	background-color: transparent !important;
+	background-image: none !important;
+	background: none !important;
+	color: #888888 !important; /* Hardcoded neutral gray instead of CSS variables */
+	text-shadow: none !important;
+	box-shadow: none !important;
+	border: none !important;
+	outline: none !important;
+}
+
+.file-pane.active .pane-status-bar .pane-status-info {
+	color: #666666 !important; /* Slightly darker gray for active pane */
+}
+
+/* Nuclear option - ensure no purple anywhere */
+.pane-status-bar,
+.pane-status-bar *,
+.pane-status-info,
+.pane-status-info * {
+	background-color: #2a2a2a !important;
+	background-image: none !important;
+	background: #2a2a2a !important;
+}
+
+/* Ultimate override - target the specific element structure */
+div.pane-status-bar {
+	all: unset !important;
+	display: flex !important;
+	align-items: center !important;
+	justify-content: center !important;
+	padding: 4px 8px !important;
+	border-top: 1px solid #333333 !important;
+	background: #2a2a2a !important;
+	min-height: 24px !important;
+	user-select: none !important;
+	color: #888888 !important;
+}
+
+/* Prevent any accent color inheritance to status bar from active pane */
+.file-pane.active div.pane-status-bar,
+.file-pane.active .pane-status-bar,
+.file-pane.active .pane-status-bar *,
+.file-pane.active .pane-status-info {
+	background-color: #2a2a2a !important;
+	background-image: none !important;
+	background: #2a2a2a !important;
+	color: #888888 !important;
+}
+
+/* Main dual panes container - basic layout only */
 .midnight-commander-dual-pane {
 	height: 100%;
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
-	/* Remove border - should look like native file explorer */
-	border: none;
-	border-radius: 0;
+	font-family: var(--font-interface);
+	flex: 1;
 }
 
 /* Individual file panes */
 .file-pane {
 	flex: 1;
-	min-height: 200px;
 	border-bottom: 1px solid var(--background-modifier-border);
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
-	position: relative;
 }
 
 .file-pane:last-child {
@@ -151,22 +253,24 @@
 	padding: 4px 0;
 }
 
-/* File items - exact native styling like .nav-file-title */
+/* File items - updated for right-aligned metadata */
 .file-item {
 	display: flex;
+	justify-content: space-between;
 	align-items: center;
-	padding: 1px 2px 1px 8px;
+	padding: 2px 8px;
 	cursor: pointer;
 	border-radius: 6px;
 	margin: 1px 8px;
 	transition:
 		color 0.1s ease,
 		background-color 0.1s ease;
-	min-height: 22px;
-	font-size: 13px;
+	height: 24px; /* UX audit requirement - consistent 24px height */
+	font-size: var(--file-explorer-font-size, 13px);
 	color: var(--text-normal);
-	line-height: 1.3;
+	line-height: 1.2;
 	font-weight: 400;
+	box-sizing: border-box;
 }
 
 /* Default inactive pane styling */
@@ -189,8 +293,11 @@
 
 /* Active/selected state - match native nav-file-title.is-active */
 .file-item.is-active {
-	background-color: var(--nav-item-background-active);
-	color: var(--nav-item-color-active);
+	background-color: var(
+		--nav-item-background-active,
+		var(--background-modifier-hover)
+	);
+	color: var(--nav-item-color-active, var(--text-normal));
 	font-weight: var(
 		--nav-item-weight-active,
 		var(--nav-file-title-weight-active, 500)
@@ -198,23 +305,62 @@
 }
 
 .file-item.is-active:hover {
-	background-color: var(--nav-item-background-active);
-	color: var(--nav-item-color-active);
+	background-color: var(
+		--nav-item-background-active,
+		var(--background-modifier-hover)
+	);
+	color: var(--nav-item-color-active, var(--text-normal));
 }
 
-/* Multi-selection state */
+/* Multi-selection state - improved visibility */
 .file-item.is-selected {
 	background-color: var(
 		--nav-item-background-selected,
-		rgba(var(--color-accent), 0.1)
+		rgba(var(--color-accent), 0.15)
 	);
 	color: var(--nav-item-color-selected, var(--text-normal));
+	border-left: 2px solid var(--interactive-accent);
 }
 
-/* Combined active and selected */
-.file-item.is-active.is-selected {
-	background-color: var(--nav-item-background-active);
-	color: var(--nav-item-color-active);
+/* Combined active and selected - use accent color for active pane */
+.file-pane.active .file-item.is-active {
+	background-color: var(
+		--interactive-accent,
+		var(--nav-item-background-active)
+	);
+	color: var(--text-on-accent, var(--nav-item-color-active));
+	border-left: none;
+}
+
+.file-pane.active .file-item.is-active.is-selected {
+	background-color: var(
+		--interactive-accent,
+		var(--nav-item-background-active)
+	);
+	color: var(--text-on-accent, var(--nav-item-color-active));
+	border-left: none;
+}
+
+/* Inactive pane selections are more subtle */
+.file-pane.inactive .file-item.is-active {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-muted);
+}
+
+/* Keyboard focus indicators - UX audit requirement */
+.file-item:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+	border-radius: var(--radius-s);
+}
+
+.file-pane.active .file-item:focus-visible {
+	outline-color: var(--interactive-accent);
+}
+
+.file-pane.inactive .file-item:focus-visible {
+	outline-color: var(--text-muted);
+	outline-style: dashed;
 }
 
 /* File item icon - match native icon styling */
@@ -253,12 +399,13 @@
 	font-weight: 500;
 }
 
-/* File item content */
-.file-item-content {
-	flex: 1;
-	min-width: 0;
+/* Left side: icon and name */
+.file-item-left {
 	display: flex;
-	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	flex: 1;
+	min-width: 0; /* Allow truncation */
 }
 
 /* File name - match native nav-file-title text styling */
@@ -266,18 +413,138 @@
 	font-size: inherit;
 	font-weight: inherit;
 	color: inherit;
-	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	line-height: inherit;
+	white-space: nowrap;
+	flex: 1;
 }
 
-/* File size metadata */
-.file-item-size {
+/* Right side: metadata */
+.file-item-meta {
+	flex-shrink: 0;
+	margin-left: 12px;
+	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
-	color: var(--text-faint);
-	margin-top: 1px;
-	line-height: 1;
+	text-align: right;
+	min-width: 60px; /* Ensure alignment */
+}
+
+/* File size and count styling */
+.file-item-size,
+.file-item-count {
+	font-size: var(--font-ui-smaller);
+	color: inherit;
+}
+
+/* Hover state shows full opacity */
+.file-item:hover .file-item-meta {
+	color: var(--text-normal);
+}
+
+/* Selected items */
+.file-pane.active .file-item.is-active .file-item-meta,
+.file-pane.active .file-item.is-selected .file-item-meta {
+	color: var(--text-on-accent);
+}
+
+/* New header layout styles */
+.mc-pane-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 4px 8px;
+	background: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	min-height: 32px;
+}
+
+.mc-breadcrumb {
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.mc-pane-controls {
+	display: flex;
+	gap: 2px;
+	flex-shrink: 0;
+	align-items: center;
+}
+
+.mc-control-btn {
+	width: 24px;
+	height: 24px;
+	padding: 2px;
+	background: transparent;
+	border: none;
+	cursor: pointer;
+	border-radius: 4px;
+	color: var(--text-muted);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 14px;
+}
+
+.mc-control-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.mc-control-btn.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.mc-control-btn.active:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.mc-selection-indicator {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	border-radius: 10px;
+	padding: 2px 6px;
+	font-size: var(--font-ui-smaller);
+	margin-left: 4px;
+}
+
+.mc-active-indicator {
+	color: var(--interactive-accent);
+	font-size: 12px;
+	margin-left: 4px;
+}
+
+/* Enhanced active pane styles with transitions */
+.file-pane {
+	transition:
+		border-color 0.15s ease,
+		box-shadow 0.15s ease,
+		opacity 0.15s ease,
+		background-color 0.15s ease;
+	border: 1px solid var(--background-modifier-border);
+}
+
+/* Active pane gets accent border and enhanced visibility */
+.file-pane.active {
+	border-color: #666666; /* Neutral gray instead of accent color */
+	box-shadow: 0 0 0 1px #666666; /* Neutral gray instead of accent color */
+	opacity: 1;
+}
+
+/* Subtle header change for active pane */
+.file-pane.active .mc-pane-header {
+	background: var(--background-secondary);
+}
+
+/* Inactive panes are slightly dimmed */
+.file-pane.inactive {
+	opacity: 0.85;
+}
+
+.file-pane.inactive:hover {
+	opacity: 0.95;
 }
 
 /* Scrollbar styling */
@@ -490,13 +757,8 @@
 /* ============================= */
 
 .pane-container {
-	position: relative;
-	overflow: hidden;
 	display: flex;
 	flex-direction: column;
-	flex-shrink: 0; /* Prevent unwanted shrinking */
-	/* Remove borders to integrate seamlessly like native file explorer */
-	border: none;
 }
 
 .pane-container.pane-top {
@@ -1458,4 +1720,291 @@
 	.tree-node-chevron {
 		transition: none;
 	}
+}
+
+/* FileFilter component styling - Obsidian-aligned design */
+.file-filter-container {
+	width: 100%;
+}
+
+.filter-panel {
+	width: 100%;
+	padding: var(--size-4-3) var(--size-4-4);
+	background: var(--background-primary);
+	border-top: 1px solid var(--background-modifier-border);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.filter-input-container {
+	width: 100%;
+	position: relative;
+	display: flex;
+	align-items: center;
+	gap: var(--size-2-2);
+	margin-bottom: var(--size-4-3);
+}
+
+.filter-input {
+	flex: 1;
+	width: 100%;
+	padding: var(--size-2-3) var(--size-4-2);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-primary);
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-family: var(--font-interface);
+	box-sizing: border-box;
+	transition:
+		border-color 0.1s ease-in-out,
+		box-shadow 0.1s ease-in-out;
+}
+
+.filter-input:focus {
+	outline: none;
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px var(--interactive-accent-hover);
+}
+
+.filter-input.error {
+	border-color: var(--text-error);
+	box-shadow: 0 0 0 2px var(--text-error);
+}
+
+.filter-clear-btn,
+.filter-advanced-btn {
+	flex-shrink: 0;
+	width: var(--clickable-icon-size);
+	height: var(--clickable-icon-size);
+	padding: var(--size-2-1);
+	background: transparent;
+	border: none;
+	border-radius: var(--radius-s);
+	color: var(--icon-color);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition:
+		background-color 0.1s ease-in-out,
+		color 0.1s ease-in-out;
+}
+
+.filter-clear-btn:hover,
+.filter-advanced-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--icon-color-hover);
+}
+
+.filter-advanced-btn.active {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.filter-error {
+	color: var(--text-error);
+	font-size: var(--font-ui-small);
+	margin-top: var(--size-2-1);
+	padding: var(--size-2-2) var(--size-4-2);
+	background: var(--background-modifier-error);
+	border-radius: var(--radius-s);
+	border-left: 3px solid var(--text-error);
+}
+
+/* Advanced Panel Styling */
+.filter-advanced-panel {
+	margin-top: var(--size-4-3);
+	padding-top: var(--size-4-3);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.filter-option-group {
+	margin-bottom: var(--size-4-4);
+}
+
+.filter-option-label {
+	display: block;
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-weight-medium);
+	color: var(--text-normal);
+	margin-bottom: var(--size-2-3);
+	text-transform: uppercase;
+	letter-spacing: 0.025em;
+}
+
+.filter-radio-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+}
+
+.filter-radio-option {
+	display: flex;
+	align-items: center;
+	font-size: var(--font-ui-medium);
+	color: var(--text-normal);
+	cursor: pointer;
+	gap: var(--size-2-2);
+	margin: 0;
+}
+
+.filter-radio-option input[type='radio'] {
+	margin: 0;
+	width: 16px;
+	height: 16px;
+}
+
+.filter-checkbox-option {
+	display: flex;
+	align-items: center;
+	font-size: var(--font-ui-medium);
+	color: var(--text-normal);
+	cursor: pointer;
+	gap: var(--size-2-2);
+	margin: 0 0 var(--size-2-3) 0;
+	padding: var(--size-2-1) 0;
+}
+
+.filter-checkbox-option input[type='checkbox'] {
+	margin: 0;
+	width: 16px;
+	height: 16px;
+}
+
+.filter-quick-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-2-2);
+}
+
+.filter-quick-btn {
+	padding: var(--size-2-2) var(--size-4-2);
+	background: var(--background-modifier-border);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	font-family: var(--font-interface);
+	cursor: pointer;
+	transition: all 0.1s ease-in-out;
+}
+
+.filter-quick-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	border-color: var(--background-modifier-hover);
+}
+
+.filter-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: var(--size-2-3);
+	margin-top: var(--size-4-4);
+	padding-top: var(--size-4-3);
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.filter-action-btn {
+	padding: var(--size-2-2) var(--size-4-3);
+	background: var(--interactive-accent);
+	border: none;
+	border-radius: var(--radius-s);
+	color: var(--text-on-accent);
+	font-size: var(--font-ui-medium);
+	font-family: var(--font-interface);
+	font-weight: var(--font-weight-medium);
+	cursor: pointer;
+	transition: background-color 0.1s ease-in-out;
+}
+
+.filter-action-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.filter-action-btn.secondary {
+	background: var(--background-modifier-border);
+	color: var(--text-normal);
+}
+
+.filter-action-btn.secondary:hover {
+	background: var(--background-modifier-hover);
+}
+
+.filter-stats {
+	margin-top: var(--size-4-3);
+	padding: var(--size-2-3) var(--size-4-2);
+	background: var(--background-secondary);
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	text-align: center;
+}
+
+/* File list area improvements - better empty space handling */
+.file-list {
+	height: 100%;
+	background: var(--background-primary);
+	position: relative;
+}
+
+.file-list-virtual {
+	min-height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
+.file-list-empty {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	min-height: 200px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-medium);
+	text-align: center;
+	padding: var(--size-4-6);
+}
+
+.file-list-empty p {
+	margin: 0;
+	opacity: 0.7;
+}
+
+.file-list-empty::before {
+	content: '📁';
+	font-size: 48px;
+	margin-bottom: var(--size-4-3);
+	opacity: 0.3;
+}
+
+/* When files exist but there's remaining space, add subtle pattern */
+.file-list-virtual::after {
+	content: '';
+	flex: 1;
+	min-height: 40px;
+	background: repeating-linear-gradient(
+		transparent,
+		transparent 23px,
+		var(--background-modifier-border-hover) 23px,
+		var(--background-modifier-border-hover) 24px
+	);
+	opacity: 0.02;
+	pointer-events: none;
+}
+
+/* File items should have proper borders */
+.file-item {
+	border-bottom: 1px solid transparent;
+	transition: border-color 0.1s ease-in-out;
+}
+
+.file-item:not(:last-child) {
+	border-bottom-color: var(--background-modifier-border-hover);
+}
+
+/* Improve file item hover states */
+.file-item:hover {
+	background: var(--background-modifier-hover);
+	border-bottom-color: var(--background-modifier-border);
 }

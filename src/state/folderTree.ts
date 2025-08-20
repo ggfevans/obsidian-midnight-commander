@@ -749,7 +749,7 @@ export const DEFAULT_TREE_CONFIG: TreeStateConfig = {
 	maxFocusHistoryItems: 50,
 	cacheExpiryTime: 300000, // 5 minutes
 	defaults: {
-		viewMode: 'tree',
+		viewMode: 'list', // Default to Classic Dual-Pane mode as per UX audit
 		expandedFolders: new Set(),
 		focusedFolder: null,
 		sortBy: 'name',

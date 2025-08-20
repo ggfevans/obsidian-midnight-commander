@@ -25,6 +25,7 @@ const DEFAULT_SETTINGS: MidnightCommanderSettings = {
 	vimBindings: false,
 	showFileIcons: true,
 	activePane: 'left',
+	fileOpenBehavior: 'replace',
 	showBreadcrumbs: true,
 	previewDelay: 300,
 	keymapProfile: 'default',

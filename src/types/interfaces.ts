@@ -16,6 +16,10 @@ export interface MidnightCommanderSettings {
 	// UI settings
 	showFileIcons: boolean;
 	activePane: 'left' | 'right';
+
+	// File opening behavior
+	fileOpenBehavior: 'replace' | 'new-tab' | 'adjacent-pane' | 'split-right';
+
 	// New settings for polish phase
 	showBreadcrumbs: boolean;
 	previewDelay: number;
@@ -126,6 +130,8 @@ export interface FilePaneProps {
 	onFilterChange?: (options: FilterOptions) => void;
 	onFilterToggle?: (isActive: boolean) => void;
 	onFilterClear?: () => void;
+	onMouseEnter?: () => void;
+	onMouseLeave?: () => void;
 }
 
 export interface FileItemProps {
