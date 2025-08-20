@@ -174,3 +174,65 @@ export interface FileFilterProps {
 	onFilterToggle: (isActive: boolean) => void;
 	onFilterClear: () => void;
 }
+
+// Tree view interfaces
+export interface TreeNodeProps {
+	folder: TFolder;
+	level: number;
+	isExpanded: boolean;
+	isSelected: boolean;
+	isFocused: boolean;
+	onToggleExpand: (folder: TFolder) => void;
+	onNavigate: (folder: TFolder) => void;
+	onFocus: (folder: TFolder) => void;
+	onContextMenu: (folder: TFolder, event: React.MouseEvent) => void;
+}
+
+export interface NestedFoldersProps {
+	folders: TFolder[];
+	level: number;
+	expandedFolders: Set<string>;
+	selectedFolder: TFolder | null;
+	focusedFolder: TFolder | null;
+	onToggleExpand: (folder: TFolder) => void;
+	onNavigate: (folder: TFolder) => void;
+	onFocus: (folder: TFolder) => void;
+	onContextMenu: (folder: TFolder, event: React.MouseEvent) => void;
+	maxRenderDepth?: number;
+}
+
+export interface FolderTreeProps {
+	app: App;
+	rootFolder: TFolder;
+	paneId: 'left' | 'right';
+	isActive: boolean;
+	onNavigateToFolder: (folder: TFolder) => void;
+	onFileClick?: (file: TAbstractFile) => void;
+	onContextMenu?: (item: TAbstractFile, event: React.MouseEvent) => void;
+	height: number;
+	width: number;
+	showFileCount?: boolean;
+	sortBy?: 'name' | 'modified' | 'size';
+	searchQuery?: string;
+	showFilesInTree?: boolean;
+	maxRenderDepth?: number;
+}
+
+export interface TreeActionsProps {
+	paneId: 'left' | 'right';
+	viewMode: 'tree' | 'list';
+	sortBy: 'name' | 'modified' | 'size';
+	showFilesInTree: boolean;
+	searchQuery: string;
+	onToggleView: (mode: 'tree' | 'list') => void;
+	onChangeSorting: (sortBy: 'name' | 'modified' | 'size') => void;
+	onToggleFiles: (show: boolean) => void;
+	onSearchChange: (query: string) => void;
+	onExpandAll: () => void;
+	onCollapseAll: () => void;
+	onRefresh: () => void;
+	isCompact?: boolean;
+	isActive?: boolean;
+	totalItems?: number;
+	visibleItems?: number;
+}

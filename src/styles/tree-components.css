@@ -1,0 +1,821 @@
+/* Tree Components Styles - NestedFolders and TreeNode */
+/* Integrates with Obsidian's theme system and File Tree Alternative patterns */
+
+/* Base tree node styles - following Obsidian nav patterns */
+.tree-node {
+	display: flex;
+	align-items: center;
+	min-height: 24px;
+	padding: 2px 4px;
+	margin: 1px 0;
+	border-radius: 3px;
+	cursor: pointer;
+	transition: background-color 0.1s ease;
+	position: relative;
+	color: var(--mc-file-item-color);
+}
+
+.tree-node:hover {
+	background-color: var(--mc-file-item-bg-hover);
+}
+
+.tree-node.is-active {
+	background-color: var(--mc-file-item-bg-selected);
+	color: var(--nav-item-color-selected, var(--mc-file-item-color));
+}
+
+.tree-node.is-focused {
+	background-color: var(--mc-file-item-bg-active);
+	outline: 1px solid var(--interactive-accent);
+	outline-offset: -1px;
+}
+
+/* Tree node content container */
+.tree-node-content {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	width: 100%;
+	min-width: 0; /* Allow text truncation */
+}
+
+/* Expand/collapse button */
+.tree-node-expand-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	padding: 0;
+	margin: 0;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	border-radius: 2px;
+	color: var(--mc-icon-color);
+	transition:
+		color 0.1s ease,
+		transform 0.1s ease;
+}
+
+.tree-node-expand-button:hover {
+	background-color: var(--nav-item-background-hover);
+	color: var(--interactive-hover);
+}
+
+.tree-node-expand-button:focus {
+	outline: 1px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+/* Chevron animation */
+.tree-node-chevron {
+	transition: transform 0.1s ease;
+	transform-origin: center;
+}
+
+.tree-node-chevron.expanded {
+	transform: rotate(90deg);
+}
+
+.tree-node-chevron.collapsed {
+	transform: rotate(0deg);
+}
+
+/* Spacer for nodes without children */
+.tree-node-spacer {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+/* Folder icon container */
+.tree-node-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	color: var(--mc-icon-color-folder);
+}
+
+/* Folder name text */
+.tree-node-name {
+	flex: 1;
+	min-width: 0;
+	font-size: var(--font-ui-small);
+	font-weight: 400;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	line-height: 1.2;
+}
+
+/* Special styling for vault root */
+.tree-node.folder .tree-node-name {
+	font-weight: 500;
+}
+
+/* Depth limit indicator */
+.tree-node-depth-limit {
+	display: flex;
+	align-items: center;
+	min-height: 20px;
+	padding: 2px 4px;
+	margin: 1px 0;
+	opacity: 0.6;
+	font-style: italic;
+}
+
+.tree-node-depth-indicator {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* Performance optimizations for large lists */
+.nested-folders-container {
+	contain: layout style;
+	will-change: transform;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+	.tree-node,
+	.tree-node-expand-button,
+	.tree-node-chevron {
+		transition: none !important;
+	}
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+	.tree-node.is-focused {
+		outline-width: 2px;
+		outline-color: var(--text-accent);
+	}
+
+	.tree-node-expand-button:focus {
+		outline-width: 2px;
+	}
+}
+
+/* Theme-specific adjustments */
+
+/* Dark theme optimizations */
+.theme-dark .tree-node-expand-button:hover {
+	background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* Light theme optimizations */
+.theme-light .tree-node-expand-button:hover {
+	background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Focus ring improvements for accessibility */
+.tree-node:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+	border-radius: 3px;
+}
+
+.tree-node-expand-button:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+/* Compact mode support */
+.compact-mode .tree-node {
+	min-height: 20px;
+	padding: 1px 2px;
+}
+
+.compact-mode .tree-node-content {
+	gap: 2px;
+}
+
+.compact-mode .tree-node-name {
+	font-size: var(--font-ui-smaller);
+}
+
+/* Popular theme compatibility */
+
+/* Minimal Theme */
+body.minimal-theme .tree-node {
+	border-radius: 0;
+}
+
+body.minimal-theme .tree-node.is-active {
+	background-color: var(
+		--background-modifier-accent,
+		var(--mc-file-item-bg-selected)
+	);
+}
+
+/* Things Theme */
+body.things-theme .tree-node-icon {
+	color: var(--accent-color, var(--mc-icon-color-folder));
+}
+
+/* Catppuccin Theme */
+body[class*='catppuccin'] .tree-node-chevron.expanded {
+	color: var(--ctp-blue, var(--interactive-accent));
+}
+
+/* Nord Theme */
+body.nord-theme .tree-node.is-focused {
+	outline-color: var(--nord10, var(--interactive-accent));
+}
+
+/* File Tree Alternative integration */
+.nav-folder-children .tree-node {
+	margin-left: 0;
+}
+
+.nav-folder-children .tree-node-content {
+	padding-left: 0;
+}
+
+/* Virtual scrolling support for performance */
+.tree-virtual-container {
+	overflow-y: auto;
+	contain: strict;
+}
+
+.tree-virtual-item {
+	contain: layout style;
+}
+
+/* Smooth scrolling for tree navigation */
+.tree-scroll-container {
+	scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tree-scroll-container {
+		scroll-behavior: auto;
+	}
+}
+
+/* Loading state for lazy-loaded folders */
+.tree-node-loading {
+	opacity: 0.6;
+}
+
+.tree-node-loading .tree-node-icon {
+	animation: tree-loading-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes tree-loading-pulse {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0.5;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.tree-node-loading .tree-node-icon {
+		animation: none;
+	}
+}
+
+/* FolderTree specific styles */
+.folder-tree {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	width: 100%;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.folder-tree.active {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.folder-tree.inactive {
+	opacity: 0.8;
+}
+
+/* FolderTree header */
+.folder-tree-header {
+	padding: 8px 12px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background-color: var(--background-secondary);
+}
+
+.folder-tree-stats {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	font-weight: 500;
+}
+
+/* FolderTree container with virtual scrolling */
+.folder-tree-container {
+	flex: 1;
+	position: relative;
+	overflow: hidden;
+	background-color: var(--background-primary);
+}
+
+.folder-tree-container:focus {
+	outline: none;
+}
+
+.folder-tree-container:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+/* Empty state */
+.folder-tree-empty {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 20px;
+	color: var(--text-muted);
+	font-style: italic;
+	text-align: center;
+}
+
+.folder-tree-empty p {
+	margin: 0;
+	font-size: var(--font-ui-small);
+}
+
+/* File items in tree (when showFilesInTree is enabled) */
+.folder-tree .tree-node.file {
+	opacity: 0.8;
+}
+
+.folder-tree .tree-node.file:hover {
+	opacity: 1;
+}
+
+.folder-tree .tree-node.file .tree-node-icon {
+	color: var(--mc-icon-color-file);
+}
+
+.folder-tree .tree-node.file .tree-node-name {
+	font-weight: 400;
+}
+
+/* Improved virtual scrolling performance */
+.folder-tree-container > div {
+	contain: layout style paint;
+}
+
+/* Keyboard navigation visual feedback */
+.folder-tree:focus-within .tree-node.is-focused {
+	background-color: var(--mc-file-item-bg-active);
+	border: 1px solid var(--interactive-accent-hover);
+	border-radius: 3px;
+}
+
+/* Search highlighting */
+.folder-tree .tree-node-name mark {
+	background-color: var(--text-highlight-bg);
+	color: var(--text-normal);
+	padding: 0 2px;
+	border-radius: 2px;
+}
+
+/* Responsive design for narrow panes */
+@media (max-width: 300px) {
+	.folder-tree-header {
+		padding: 6px 8px;
+	}
+
+	.folder-tree-stats {
+		font-size: var(--font-ui-smallest);
+	}
+
+	.tree-node {
+		padding: 1px 2px;
+		min-height: 20px;
+	}
+
+	.tree-node-content {
+		gap: 2px;
+	}
+
+	.tree-node-name {
+		font-size: var(--font-ui-smaller);
+	}
+}
+
+/* High performance mode for very large trees */
+.folder-tree.performance-mode .tree-node {
+	will-change: transform;
+	contain: layout style;
+}
+
+.folder-tree.performance-mode .tree-node-content {
+	contain: layout;
+}
+
+/* Integration with Obsidian's scrollbar styling */
+.folder-tree-container::-webkit-scrollbar {
+	width: var(--scrollbar-width, 8px);
+}
+
+.folder-tree-container::-webkit-scrollbar-track {
+	background: var(--scrollbar-bg, transparent);
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb {
+	background: var(--scrollbar-thumb-bg, rgba(255, 255, 255, 0.1));
+	border-radius: var(--scrollbar-thumb-border-radius, 4px);
+}
+
+.folder-tree-container::-webkit-scrollbar-thumb:hover {
+	background: var(--scrollbar-thumb-bg-hover, rgba(255, 255, 255, 0.2));
+}
+
+/* TreeActions Component Styles */
+.tree-actions {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 6px 8px;
+	background-color: var(--background-secondary);
+	border-bottom: 1px solid var(--background-modifier-border);
+	min-height: 32px;
+	position: relative;
+}
+
+.tree-actions.compact {
+	padding: 4px 6px;
+	min-height: 28px;
+	gap: 6px;
+}
+
+.tree-actions.active {
+	background-color: var(--background-modifier-accent);
+	border-bottom-color: var(--interactive-accent);
+}
+
+/* Action Groups */
+.tree-actions-group {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.tree-actions-group.primary {
+	flex: 1;
+}
+
+.tree-actions-group.secondary {
+	flex-shrink: 0;
+}
+
+/* Base Action Button */
+.tree-action-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 2px;
+	padding: 4px 6px;
+	border: none;
+	border-radius: 3px;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	transition: all 0.1s ease;
+	font-size: var(--font-ui-smaller);
+	min-width: 24px;
+	height: 24px;
+	position: relative;
+}
+
+.tree-action-btn:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.tree-action-btn:active {
+	background-color: var(--background-modifier-active);
+	transform: translateY(0.5px);
+}
+
+.tree-action-btn:focus {
+	outline: 1px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+.tree-action-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.tree-action-btn.active {
+	background-color: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.tree-action-btn.active:hover {
+	background-color: var(--interactive-accent-hover);
+}
+
+/* Specific Button Styles */
+.tree-action-btn.view-toggle.tree {
+	color: var(--color-accent);
+}
+
+.tree-action-btn.search-toggle.active {
+	background-color: var(--background-modifier-accent);
+	color: var(--interactive-accent);
+}
+
+.tree-action-btn.sort-toggle.active {
+	background-color: var(--background-modifier-hover);
+}
+
+.tree-action-btn.files-toggle.active {
+	color: var(--color-accent);
+	background-color: var(--background-modifier-accent);
+}
+
+.tree-action-btn.refreshing {
+	pointer-events: none;
+}
+
+.tree-action-btn.refreshing svg {
+	animation: tree-action-spin 1s linear infinite;
+}
+
+/* Action Button Badges */
+.tree-action-badge {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	min-width: 14px;
+	height: 14px;
+	background-color: var(--text-error);
+	color: var(--text-on-accent);
+	border-radius: 7px;
+	font-size: 10px;
+	font-weight: 600;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 3px;
+	line-height: 1;
+	border: 1px solid var(--background-secondary);
+}
+
+/* Search Input Container */
+.tree-search-container {
+	flex: 1;
+	max-width: 200px;
+}
+
+.tree-search-input-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 6px;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 3px;
+	transition: border-color 0.1s ease;
+}
+
+.tree-search-input-wrapper:focus-within {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 1px var(--interactive-accent);
+}
+
+.tree-search-input {
+	flex: 1;
+	border: none;
+	background: transparent;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	outline: none;
+	min-width: 0;
+}
+
+.tree-search-input::placeholder {
+	color: var(--text-muted);
+}
+
+.tree-search-clear {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	border: none;
+	background: transparent;
+	color: var(--text-muted);
+	cursor: pointer;
+	border-radius: 2px;
+	transition: color 0.1s ease;
+}
+
+.tree-search-clear:hover {
+	color: var(--text-normal);
+	background-color: var(--background-modifier-hover);
+}
+
+/* Sort Dropdown */
+.tree-sort-container {
+	position: relative;
+}
+
+.tree-sort-dropdown {
+	position: absolute;
+	top: 100%;
+	left: 0;
+	z-index: 1000;
+	min-width: 140px;
+	padding: 4px;
+	background-color: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	box-shadow: var(--shadow-s);
+	margin-top: 2px;
+}
+
+.tree-sort-option {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 6px 8px;
+	border: none;
+	border-radius: 3px;
+	background: transparent;
+	color: var(--text-normal);
+	cursor: pointer;
+	font-size: var(--font-ui-small);
+	text-align: left;
+	transition: background-color 0.1s ease;
+}
+
+.tree-sort-option:hover {
+	background-color: var(--background-modifier-hover);
+}
+
+.tree-sort-option:focus {
+	outline: 1px solid var(--interactive-accent);
+	outline-offset: -1px;
+}
+
+.tree-sort-option.selected {
+	background-color: var(--background-modifier-accent);
+	color: var(--interactive-accent);
+}
+
+.tree-sort-option span {
+	flex: 1;
+}
+
+/* Status Display */
+.tree-actions-status {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.tree-status-filter {
+	background-color: var(--background-modifier-accent);
+	color: var(--interactive-accent);
+	padding: 2px 6px;
+	border-radius: 10px;
+	font-weight: 500;
+	font-size: 10px;
+}
+
+/* Animations */
+@keyframes tree-action-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+/* Responsive Design */
+@media (max-width: 300px) {
+	.tree-actions {
+		padding: 4px;
+		gap: 4px;
+	}
+
+	.tree-actions-group {
+		gap: 2px;
+	}
+
+	.tree-action-btn {
+		padding: 3px 4px;
+		min-width: 20px;
+		height: 20px;
+	}
+
+	.tree-search-container {
+		max-width: 120px;
+	}
+
+	.tree-sort-dropdown {
+		min-width: 120px;
+	}
+}
+
+/* Compact Mode */
+.tree-actions.compact .tree-action-btn {
+	padding: 3px 4px;
+	min-width: 20px;
+	height: 20px;
+}
+
+.tree-actions.compact .tree-search-input-wrapper {
+	padding: 1px 4px;
+}
+
+.tree-actions.compact .tree-search-input {
+	font-size: var(--font-ui-smaller);
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+	.tree-action-btn:focus {
+		outline-width: 2px;
+		outline-color: var(--text-accent);
+	}
+
+	.tree-sort-dropdown {
+		border-width: 2px;
+	}
+
+	.tree-search-input-wrapper:focus-within {
+		border-width: 2px;
+	}
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+	.tree-action-btn,
+	.tree-search-input-wrapper,
+	.tree-sort-option {
+		transition: none !important;
+	}
+
+	.tree-action-btn.refreshing svg {
+		animation: none !important;
+	}
+}
+
+/* Dark Theme Adjustments */
+.theme-dark .tree-search-input-wrapper {
+	background-color: var(--background-modifier-form-field);
+}
+
+.theme-dark .tree-sort-dropdown {
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Light Theme Adjustments */
+.theme-light .tree-sort-dropdown {
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Integration with Pane Headers */
+.pane-header .tree-actions {
+	border-bottom: none;
+	background: transparent;
+	padding: 0 4px;
+}
+
+.pane-header .tree-actions.compact {
+	padding: 0 2px;
+}
+
+/* Focus Management */
+.tree-actions:focus-within .tree-action-btn:not(:focus) {
+	opacity: 0.7;
+}
+
+/* Keyboard Navigation Indicators */
+.tree-action-btn:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: 1px;
+}
+
+.tree-sort-option:focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
