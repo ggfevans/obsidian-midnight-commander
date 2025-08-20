@@ -284,95 +284,100 @@ export const FilePane: React.FC<FilePaneProps> = ({
 				/>
 			)}
 
-			{/* Conditional rendering based on view mode */}
-			{viewMode === 'tree' ? (
-				/* Tree View */
-				<FolderTree
-					app={app}
-					rootFolder={paneState.currentFolder}
-					paneId={paneId}
-					isActive={paneState.isActive}
-					onNavigateToFolder={onNavigateToFolder}
-					onFileClick={onFileClick}
-					onContextMenu={(item, event) =>
-						onFileContextMenu(item, { x: event.clientX, y: event.clientY })
-					}
-					height={window.innerHeight - 200} // Adjust based on header/filter heights
-					width={300} // Will be styled with CSS
-					showFileCount={true}
-					sortBy={sortBy}
-					searchQuery={searchQuery}
-					showFilesInTree={showFilesInTree}
-					maxRenderDepth={50}
-				/>
-			) : /* List View (original virtual scrolling) */
-			files.length === 0 ? (
-				<div className="file-list-empty">
-					<p>This folder is empty</p>
-					<span
-						style={{
-							fontSize: 'var(--font-ui-small)',
-							opacity: 0.6,
-							marginTop: 'var(--size-2-2)',
-						}}
-					>
-						{paneState.filter?.isActive
-							? 'Try adjusting your search filters'
-							: 'No files or folders to display'}
-					</span>
-				</div>
-			) : (
-				<div
-					ref={parentRef}
-					className="file-list file-list-virtual"
-					style={{
-						height: 'calc(100% - 26px)',
-						overflowY: 'auto',
-						overflowX: 'hidden',
-					}}
-				>
-					<div
-						style={{
-							height: `${virtualizer.getTotalSize()}px`,
-							width: '100%',
-							position: 'relative',
-						}}
-					>
-						{virtualizer.getVirtualItems().map(virtualItem => {
-							const file = files[virtualItem.index];
-							if (!file) return null;
-
-							return (
-								<div
-									key={virtualItem.key}
-									style={{
-										position: 'absolute',
-										top: 0,
-										left: 0,
-										width: '100%',
-										height: `${virtualItem.size}px`,
-										transform: `translateY(${virtualItem.start}px)`,
-									}}
-								>
-									{/* Only show cursor selection on active pane */}
-									{/* Multi-selection can show on any pane, but only when files are actually selected */}
-									<FileItem
-										file={file}
-										isSelected={
-											paneState.isActive &&
-											virtualItem.index === paneState.selectedIndex
-										}
-										isHighlighted={paneState.selectedFiles.has(file.path)}
-										onClick={handleFileItemClick}
-										onContextMenu={handleFileItemContextMenu}
-										onDoubleClick={handleFileItemDoubleClick}
-									/>
-								</div>
-							);
-						})}
+			{/* Content area - flex container for remaining space */}
+			<div
+				className="file-pane-content"
+				style={{ flex: 1, display: 'flex', flexDirection: 'column' }}
+			>
+				{/* Conditional rendering based on view mode */}
+				{viewMode === 'tree' ? (
+					/* Tree View */
+					<FolderTree
+						app={app}
+						rootFolder={paneState.currentFolder}
+						paneId={paneId}
+						isActive={paneState.isActive}
+						onNavigateToFolder={onNavigateToFolder}
+						onFileClick={onFileClick}
+						onContextMenu={(item, event) =>
+							onFileContextMenu(item, { x: event.clientX, y: event.clientY })
+						}
+						height={window.innerHeight - 200} // Adjust based on header/filter heights
+						width={300} // Will be styled with CSS
+						showFileCount={true}
+						sortBy={sortBy}
+						searchQuery={searchQuery}
+						showFilesInTree={showFilesInTree}
+						maxRenderDepth={50}
+					/>
+				) : /* List View (original virtual scrolling) */
+				files.length === 0 ? (
+					<div className="file-list-empty">
+						<p>This folder is empty</p>
+						<span
+							style={{
+								fontSize: 'var(--font-ui-small)',
+								opacity: 0.6,
+								marginTop: 'var(--size-2-2)',
+							}}
+						>
+							{paneState.filter?.isActive
+								? 'Try adjusting your search filters'
+								: 'No files or folders to display'}
+						</span>
 					</div>
-				</div>
-			)}
+				) : (
+					<div
+						ref={parentRef}
+						className="file-list file-list-virtual"
+						style={{
+							overflowY: 'auto',
+							overflowX: 'hidden',
+						}}
+					>
+						<div
+							style={{
+								height: `${virtualizer.getTotalSize()}px`,
+								width: '100%',
+								position: 'relative',
+							}}
+						>
+							{virtualizer.getVirtualItems().map(virtualItem => {
+								const file = files[virtualItem.index];
+								if (!file) return null;
+
+								return (
+									<div
+										key={virtualItem.key}
+										style={{
+											position: 'absolute',
+											top: 0,
+											left: 0,
+											width: '100%',
+											height: `${virtualItem.size}px`,
+											transform: `translateY(${virtualItem.start}px)`,
+										}}
+									>
+										{/* Only show cursor selection on active pane */}
+										{/* Multi-selection can show on any pane, but only when files are actually selected */}
+										<FileItem
+											file={file}
+											isSelected={
+												paneState.isActive &&
+												virtualItem.index === paneState.selectedIndex
+											}
+											isHighlighted={paneState.selectedFiles.has(file.path)}
+											onClick={handleFileItemClick}
+											onContextMenu={handleFileItemContextMenu}
+											onDoubleClick={handleFileItemDoubleClick}
+										/>
+									</div>
+								);
+							})}
+						</div>
+					</div>
+				)}
+			</div>
 
 			{/* Status Bar - UX audit requirement */}
 			<div className="pane-status-bar">

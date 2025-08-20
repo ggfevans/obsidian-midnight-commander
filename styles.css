@@ -594,7 +594,7 @@ div.pane-status-bar {
 	/* Ensure proper scrolling behavior - vertical only */
 	overflow-y: auto;
 	overflow-x: hidden;
-	height: 100%;
+	flex: 1;
 	position: relative;
 }
 
